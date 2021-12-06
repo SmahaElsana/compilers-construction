@@ -352,13 +352,19 @@ match sexpr with
   (match ribs with
   | ScmNil ->  (ScmPair(ScmPair(ScmSymbol "lambda", ScmPair(ScmNil, body)), ScmNil))
   | ScmPair(first_rib, rest_ribs) ->
+
             let (vars, vals) =
+
               List.fold_right
-                (fun current (vars, vals) ->
-                    match current with
+
+                (fun rib_lst (vars, vals) ->
+                    match rib_lst with
                     | ScmPair(var, ScmPair(value, ScmNil)) -> (ScmPair(var, vars), ScmPair(value, vals))
                     | _ -> raise X_my_exception) 
-                (scm_list_to_list ribs) (ScmNil, ScmNil) in
+
+                (scm_list_to_list ribs) 
+                (ScmNil, ScmNil) 
+              in
              (ScmPair(ScmPair(ScmSymbol "lambda", ScmPair(vars, body)), vals))
   | _ -> raise X_my_exception)
 
