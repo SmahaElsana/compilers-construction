@@ -24,6 +24,7 @@ exception X_if;;
 exception X_bad_MIT;;
 exception X_bad_letrec;;
 exception X_bad_let;;
+exception X_bad_lambda_body;;
 
 exception X_vars_duplicated;;
 
@@ -301,12 +302,28 @@ let rec letrec_set_args args body =
       |ScmPair(r, ribs) -> my_macro_expand(ScmPair(ScmSymbol "let", ScmPair(ScmPair(r, ScmNil), ScmPair(ScmPair(ScmSymbol "let*", ScmPair(ribs, body)), ScmNil))))
       |_-> raise X_my_exception)
     
-    (*letrec*)
-    |ScmPair(ScmSymbol "letrec", ScmPair(ribs, body)) -> 
-      (match ribs with 
-      |ScmNil ->  my_macro_expand(ScmPair(ScmSymbol "let", ScmPair(ScmNil, body))) 
-      |ScmPair(car,cdr) -> my_macro_expand(ScmPair(ScmSymbol "let", ScmPair((letrec_args ribs), (letrec_set_args ribs body))))
-      |_ -> raise X_bad_letrec)
+      |ScmPair(ScmSymbol "letrec", ScmPair(ribs, body)) -> 
+        (match ribs with 
+        |ScmNil ->  my_macro_expand(ScmPair(ScmSymbol "let", ScmPair(ScmNil, body))) 
+        (* |ScmPair(car,cdr) -> macro_expand(ScmPair(ScmSymbol "let", ScmPair((letrec_args ribs),ScmPair(ScmNil, (letrec_set_args ribs body)) ))) *)
+        | ScmPair(first_rib, rest_ribs) ->
+          let rec whatever_ribs ribs =
+            (match ribs with
+            | ScmNil -> ScmNil
+            | ScmPair(ScmPair(ScmSymbol var, ScmPair(sexpr_val, ScmNil)), rest_ribs) -> ScmPair(ScmPair(ScmSymbol var, ScmPair(ScmPair(ScmSymbol "quote", ScmPair(ScmSymbol "whatever", ScmNil)), ScmNil)), (whatever_ribs rest_ribs))
+            | _ -> raise X_my_exception) in
+          let rec body_expantion ribs body =
+            (match ribs with
+            | ScmPair(ScmPair(var, ScmPair(sexpr_val, ScmNil)), rest_ribs) -> ( ScmPair(ScmPair(ScmSymbol "set!", ScmPair(var, ScmPair(sexpr_val, ScmNil))), (body_expantion rest_ribs body)))
+            |ScmPair(e, ScmNil)-> ScmPair(e,body)
+            (* | ScmNil -> (ScmPair(ScmPair(ScmSymbol "let", ScmPair(ScmNil, body)), ScmNil)) *)
+            | ScmNil -> ScmPair(body,ScmNil)
+
+      
+      
+            | _ -> raise X_my_exception) in
+           my_macro_expand(ScmPair(ScmSymbol "let", ScmPair((whatever_ribs ribs), (body_expantion ribs body))))
+        |_ -> raise X_bad_letrec)
     
     (*2.5 Handling quasiquote-expressions*)
     |ScmPair(ScmSymbol "quasiquote", ScmPair(s, ScmNil)) -> (qq_helper s)
@@ -349,7 +366,7 @@ match sexpr with
             (* |ScmPair(car,cdr)->ScmSeq (List.map tag_parse_expression (scm_list_to_list body)) *)
             |ScmPair(car,cdr)->tag_parse_expression (ScmPair(ScmSymbol "begin",body))
 
-            |_-> raise X_my_exception(**empty body*)) in
+            |_-> raise X_bad_lambda_body(**empty body*)) in
   if(scm_is_list args)
     (*simple lambda*)
   then(if(check_duplications (scm_list_to_list args)) 
@@ -452,7 +469,23 @@ match sexpr with
 |ScmPair(ScmSymbol "letrec", ScmPair(ribs, body)) -> 
   (match ribs with 
   |ScmNil ->  macro_expand(ScmPair(ScmSymbol "let", ScmPair(ScmNil, body))) 
-  |ScmPair(car,cdr) -> macro_expand(ScmPair(ScmSymbol "let", ScmPair((letrec_args ribs),ScmPair(ScmNil, (letrec_set_args ribs body)) )))
+  (* |ScmPair(car,cdr) -> macro_expand(ScmPair(ScmSymbol "let", ScmPair((letrec_args ribs),ScmPair(ScmNil, (letrec_set_args ribs body)) ))) *)
+  | ScmPair(first_rib, rest_ribs) ->
+    let rec whatever_ribs ribs =
+      (match ribs with
+      | ScmNil -> ScmNil
+      | ScmPair(ScmPair(ScmSymbol var, ScmPair(sexpr_val, ScmNil)), rest_ribs) -> ScmPair(ScmPair(ScmSymbol var, ScmPair(ScmPair(ScmSymbol "quote", ScmPair(ScmSymbol "whatever", ScmNil)), ScmNil)), (whatever_ribs rest_ribs))
+      | _ -> raise X_my_exception) in
+    let rec body_expantion ribs body =
+      (match ribs with
+      | ScmPair(ScmPair(var, ScmPair(sexpr_val, ScmNil)), rest_ribs) -> 
+        ( ScmPair(ScmPair(ScmSymbol "set!", ScmPair(var, ScmPair(sexpr_val, ScmNil))), (body_expantion rest_ribs body)))
+      |ScmPair(e, ScmNil)-> ScmPair(e,body)
+      (* | ScmNil -> (ScmPair(ScmPair(ScmSymbol "let", ScmPair(ScmNil, body)), ScmNil)) *)
+      | ScmNil -> body
+
+      | _ -> raise X_my_exception) in
+     macro_expand(ScmPair(ScmSymbol "let", ScmPair((whatever_ribs ribs), (body_expantion ribs body))))
   |_ -> raise X_bad_letrec)
 
 (*2.5 Handling quasiquote-expressions*)
