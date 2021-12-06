@@ -188,7 +188,6 @@ let rec expr_eq e1 e2 =
 
 module type TAG_PARSER = sig
   val tag_parse_expression : sexpr -> expr
-  val my_macro_expand : sexpr -> sexpr
 end;; 
 
 module Tag_Parser : TAG_PARSER = struct
@@ -221,114 +220,19 @@ let rec simple_lambda_args_helper args lst = match args with
 
 let simple_lambda_args args = simple_lambda_args_helper args [];;
 
-let rec letrec_args args =
-  (match args with
-  |ScmNil -> ScmNil
-  |ScmPair(ScmPair(ScmSymbol v,ScmPair(v_val, ScmNil)),cdr)->
-    ScmPair(ScmPair(ScmSymbol v, ScmPair(ScmPair(ScmSymbol "quote", ScmPair(ScmSymbol "whatever", ScmNil)), ScmNil)), (letrec_args cdr))
-  |_-> raise X_my_exception
-  );;
+let rec letrec_ribs ribs =
+  (match ribs with
+  | ScmNil -> ScmNil
+  | ScmPair(ScmPair(ScmSymbol var, ScmPair(varval, ScmNil)), rest) -> ScmPair(ScmPair(ScmSymbol var, ScmPair(ScmPair(ScmSymbol "quote", ScmPair(ScmSymbol "whatever", ScmNil)), ScmNil)), (letrec_ribs rest))
+  | _ -> raise X_my_exception);;
 
-let rec letrec_set_args args body =
-  (match args with
-                  | ScmNil -> ScmPair(ScmPair(ScmSymbol "let", ScmPair(ScmNil, body)), ScmNil)
-                  | ScmPair(ScmPair(v, ScmPair(v_val, ScmNil)), cdr) ->
-                    ScmPair(ScmPair(ScmSymbol "set!", ScmPair(v, ScmPair(v_val, ScmNil))), (letrec_set_args cdr body))
-
-                    (* ScmPair(ScmSymbol "let", ScmPair(ScmNil, ScmPair(ScmPair(ScmSymbol "set!", ScmPair(v, ScmPair(v_val, ScmNil))), (letrec_set_args cdr body)))) *)
-                    (* ScmPair(ScmPair(ScmSymbol "set!", ScmPair(v, ScmPair(v_val, ScmNil))), (letrec_set_args cdr body)) *)
-                  | _ -> raise X_my_exception);;
-
-
-
-  let rec my_macro_expand sexpr =
-    match sexpr with
-    (* and *)
-    (*2.1.6 define (2)MIT define*)                                                        
-    (* |ScmPair(ScmSymbol "define",ScmPair(ScmPair(var,args),body)) ->
-      ScmPair(ScmSymbol "define",ScmPair(var,(ScmPair(ScmSymbol "lambda", ScmPair(args,body))))) *)
-    
-    | ScmPair(ScmSymbol "and", pairs) -> 
-      (match pairs with
-      |ScmNil -> ScmBoolean true
-      |ScmPair(car, ScmNil)-> car
-      |ScmPair(car,cdr)-> ScmPair(ScmSymbol "if",ScmPair(car, ScmPair (ScmPair(ScmSymbol "and", cdr), ScmPair(ScmBoolean(false),ScmNil)  )))
-      |_-> raise X_and_macro
-      )
-    (* Handle macro expansion patterns here *)
-    (*2.3 Expanding cond statements*)
-    |ScmPair(ScmSymbol "cond",ribs) ->(match ribs with
-    
-      |ScmPair(ScmPair(test,ScmPair(ScmSymbol "=>",ScmPair(dit,ScmNil))), seq) -> 
-        (match seq with
-        (*base case*)
-        |ScmNil ->  my_macro_expand (ScmPair(ScmSymbol "let", ScmPair(ScmPair(ScmPair(ScmSymbol "value", ScmPair(test, ScmNil)), 
-          ScmPair(ScmPair(ScmSymbol "f", ScmPair(ScmPair(ScmSymbol "lambda", ScmPair(ScmNil, ScmPair(dit, ScmNil))), ScmNil)), ScmNil)), 
-          ScmPair(ScmPair(ScmSymbol "if", ScmPair(ScmSymbol "value", ScmPair(ScmPair(ScmPair(ScmSymbol "f", ScmNil), ScmPair(ScmSymbol "value", ScmNil)), ScmNil))), ScmNil))))
-        
-        |_ -> my_macro_expand(ScmPair(ScmSymbol "let", ScmPair(ScmPair(ScmPair(ScmSymbol "value", ScmPair(test, ScmNil)), 
-          ScmPair(ScmPair(ScmSymbol "f", ScmPair(ScmPair(ScmSymbol "lambda", ScmPair(ScmNil, ScmPair(dit, ScmNil))), ScmNil)), 
-          ScmPair(ScmPair(ScmSymbol "rest", ScmPair(ScmPair(ScmSymbol "lambda", ScmPair(ScmNil, ScmPair(ScmPair(ScmSymbol "cond", seq), ScmNil))), ScmNil)), ScmNil))), 
-          ScmPair(ScmPair(ScmSymbol "if", ScmPair(ScmSymbol "value", ScmPair(ScmPair(ScmPair(ScmSymbol "f", ScmNil), ScmPair(ScmSymbol "value", ScmNil)), 
-          ScmPair(ScmPair(ScmSymbol "rest", ScmNil), ScmNil)))), ScmNil))))
-        )
-      |ScmPair(ScmPair(ScmSymbol "else", rest),_)-> ScmPair(ScmSymbol "begin",rest)
-    
-      |ScmPair(ScmPair(test,cdr),rest) -> (match rest with 
-          |ScmNil -> (ScmPair (ScmSymbol "if",ScmPair(test, ScmPair( ScmPair(ScmSymbol "begin", cdr),ScmNil))))
-          |_ -> ScmPair(ScmSymbol "if",ScmPair(test,ScmPair(ScmPair(ScmSymbol "begin",cdr), ScmPair(ScmPair(ScmSymbol "cond",rest),ScmNil)))))
-      |_-> raise X_my_exception
-      )
-    (*2.4 Expanding let, let*, letrec*)
-    (*let*)
-    |ScmPair(ScmSymbol "let", ScmPair(ribs, body)) -> 
-      (match ribs with
-      | ScmNil ->  (ScmPair(ScmPair(ScmSymbol "lambda", ScmPair(ScmNil, body)), ScmNil))
-      | ScmPair(first_rib, rest_ribs) ->
-                let (vars, vals) =
-                  List.fold_right
-                    (fun current (vars, vals) ->
-                        match current with
-                        | ScmPair(var, ScmPair(value, ScmNil)) -> (ScmPair(var, vars), ScmPair(value, vals))
-                        | _ -> raise X_my_exception) 
-                    (scm_list_to_list ribs) (ScmNil, ScmNil) in
-                 (ScmPair(ScmPair(ScmSymbol "lambda", ScmPair(vars, body)), vals))
-      | _ -> raise X_my_exception)
-    (*let* *)
-    |ScmPair(ScmSymbol "let*",ScmPair(n_exps,body)) ->
-      (match n_exps with
-      |ScmNil -> my_macro_expand(ScmPair(ScmSymbol "let",ScmPair(ScmNil,body)))
-      |ScmPair(r,ScmNil) -> my_macro_expand(ScmPair(ScmSymbol "let",ScmPair(ScmPair(r,ScmNil),body)))
-      |ScmPair(r, ribs) -> my_macro_expand(ScmPair(ScmSymbol "let", ScmPair(ScmPair(r, ScmNil), ScmPair(ScmPair(ScmSymbol "let*", ScmPair(ribs, body)), ScmNil))))
-      |_-> raise X_my_exception)
-    
-      |ScmPair(ScmSymbol "letrec", ScmPair(ribs, body)) -> 
-        (match ribs with 
-        |ScmNil ->  my_macro_expand(ScmPair(ScmSymbol "let", ScmPair(ScmNil, body))) 
-        (* |ScmPair(car,cdr) -> macro_expand(ScmPair(ScmSymbol "let", ScmPair((letrec_args ribs),ScmPair(ScmNil, (letrec_set_args ribs body)) ))) *)
-        | ScmPair(first_rib, rest_ribs) ->
-          let rec whatever_ribs ribs =
-            (match ribs with
-            | ScmNil -> ScmNil
-            | ScmPair(ScmPair(ScmSymbol var, ScmPair(sexpr_val, ScmNil)), rest_ribs) -> ScmPair(ScmPair(ScmSymbol var, ScmPair(ScmPair(ScmSymbol "quote", ScmPair(ScmSymbol "whatever", ScmNil)), ScmNil)), (whatever_ribs rest_ribs))
-            | _ -> raise X_my_exception) in
-          let rec body_expantion ribs body =
-            (match ribs with
-            | ScmPair(ScmPair(var, ScmPair(sexpr_val, ScmNil)), rest_ribs) -> ( ScmPair(ScmPair(ScmSymbol "set!", ScmPair(var, ScmPair(sexpr_val, ScmNil))), (body_expantion rest_ribs body)))
-            |ScmPair(e, ScmNil)-> ScmPair(e,body)
-            (* | ScmNil -> (ScmPair(ScmPair(ScmSymbol "let", ScmPair(ScmNil, body)), ScmNil)) *)
-            | ScmNil -> ScmPair(body,ScmNil)
-
-      
-      
-            | _ -> raise X_my_exception) in
-           my_macro_expand(ScmPair(ScmSymbol "let", ScmPair((whatever_ribs ribs), (body_expantion ribs body))))
-        |_ -> raise X_bad_letrec)
-    
-    (*2.5 Handling quasiquote-expressions*)
-    |ScmPair(ScmSymbol "quasiquote", ScmPair(s, ScmNil)) -> (qq_helper s)
-    
-    | _ -> sexpr;;
+  let rec letrec_body ribs body =
+    (match ribs with
+    | ScmPair(ScmPair(var, ScmPair(varval, ScmNil)), rest) -> 
+      ( ScmPair(ScmPair(ScmSymbol "set!", ScmPair(var, ScmPair(varval, ScmNil))), (letrec_body rest body)))
+    |ScmPair(e, ScmNil)-> ScmPair(e,body)
+    | ScmNil -> body
+    | _ -> raise X_my_exception);;
 
 let rec tag_parse_expression sexpr =
 let sexpr = macro_expand sexpr in
@@ -457,6 +361,7 @@ match sexpr with
                 (scm_list_to_list ribs) (ScmNil, ScmNil) in
              (ScmPair(ScmPair(ScmSymbol "lambda", ScmPair(vars, body)), vals))
   | _ -> raise X_my_exception)
+
 (*let* *)
 |ScmPair(ScmSymbol "let*",ScmPair(n_exps,body)) ->
   (match n_exps with
@@ -469,23 +374,7 @@ match sexpr with
 |ScmPair(ScmSymbol "letrec", ScmPair(ribs, body)) -> 
   (match ribs with 
   |ScmNil ->  macro_expand(ScmPair(ScmSymbol "let", ScmPair(ScmNil, body))) 
-  (* |ScmPair(car,cdr) -> macro_expand(ScmPair(ScmSymbol "let", ScmPair((letrec_args ribs),ScmPair(ScmNil, (letrec_set_args ribs body)) ))) *)
-  | ScmPair(first_rib, rest_ribs) ->
-    let rec whatever_ribs ribs =
-      (match ribs with
-      | ScmNil -> ScmNil
-      | ScmPair(ScmPair(ScmSymbol var, ScmPair(sexpr_val, ScmNil)), rest_ribs) -> ScmPair(ScmPair(ScmSymbol var, ScmPair(ScmPair(ScmSymbol "quote", ScmPair(ScmSymbol "whatever", ScmNil)), ScmNil)), (whatever_ribs rest_ribs))
-      | _ -> raise X_my_exception) in
-    let rec body_expantion ribs body =
-      (match ribs with
-      | ScmPair(ScmPair(var, ScmPair(sexpr_val, ScmNil)), rest_ribs) -> 
-        ( ScmPair(ScmPair(ScmSymbol "set!", ScmPair(var, ScmPair(sexpr_val, ScmNil))), (body_expantion rest_ribs body)))
-      |ScmPair(e, ScmNil)-> ScmPair(e,body)
-      (* | ScmNil -> (ScmPair(ScmPair(ScmSymbol "let", ScmPair(ScmNil, body)), ScmNil)) *)
-      | ScmNil -> body
-
-      | _ -> raise X_my_exception) in
-     macro_expand(ScmPair(ScmSymbol "let", ScmPair((whatever_ribs ribs), (body_expantion ribs body))))
+  | ScmPair(first_rib, rest_ribs) -> macro_expand(ScmPair(ScmSymbol "let", ScmPair((letrec_ribs ribs), (letrec_body ribs body))))
   |_ -> raise X_bad_letrec)
 
 (*2.5 Handling quasiquote-expressions*)
