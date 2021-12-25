@@ -303,9 +303,9 @@ match sexpr with
   |ScmPair(car,ScmNil)-> tag_parse_expression car
   |_-> ScmSeq(List.map tag_parse_expression (scm_list_to_list lst)))
 
+(* |ScmPair(ScmSymbol "list",lst) -> ScmSeq(List.map tag_parse_expression (scm_list_to_list lst)) *)
 (*2.1.8 Applications- should be last when tag parsing*)
 |ScmPair(car,cdr)-> ScmApplic(tag_parse_expression car, List.map tag_parse_expression (scm_list_to_list cdr))
-
 | _ -> raise (X_syntax_error (sexpr, "Sexpr structure not recognized"))
 
 and macro_expand sexpr =
