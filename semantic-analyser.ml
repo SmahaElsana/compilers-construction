@@ -277,21 +277,6 @@ module Semantic_Analysis : SEMANTIC_ANALYSIS = struct
               else ScmSeq'(set_params @ [boxed_body])) in
     (box_set extended_body)
     
-    (* let params_boxed = List.map (fun v -> ScmSet'(v, ScmBox' v)) params in
-    
-  
-    let rec box_all_params params_to_box body = (*CHANGE STRUCTURE HERE*)
-      (match params_to_box with
-      | [] -> if (List.length params = 0) then body else (match body with 
-                                                              | ScmSeq' expr_list -> ScmSeq'(params_boxed @ expr_list) 
-                                                              | _ -> ScmSeq'(params_boxed @ [body]))
-      | VarParam(param_name, _)::tl -> box_all_params tl (box_p_in_body param_name body)
-      | _ -> raise X_this_should_not_happen) in
-      (* box_all_params params (box_set body) *)
-      (box_all_params params body)
-     *)
-
-
   and box_p_in_body pname expr =
     match expr with
     | ScmConst' _ -> expr
