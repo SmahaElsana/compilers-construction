@@ -322,9 +322,12 @@ match sexpr with
   |ScmPair(car,cdr)-> ScmPair(ScmSymbol "if",ScmPair(car, ScmPair (ScmPair(ScmSymbol "and", cdr), ScmPair(ScmBoolean(false),ScmNil)  )))
   |_-> raise X_and_macro
   )
+  
 (* Handle macro expansion patterns here *)
 (*2.3 Expanding cond statements*)
 |ScmPair(ScmSymbol "cond",ribs) ->(match ribs with
+  (**else rib in a cond *)
+  |ScmPair(ScmPair(ScmSymbol "else", rest),_)-> ScmPair(ScmSymbol "begin",rest)
 
   |ScmPair(ScmPair(test,ScmPair(ScmSymbol "=>",ScmPair(dit,ScmNil))), seq) -> 
     (match seq with
@@ -339,7 +342,7 @@ match sexpr with
       ScmPair(ScmPair(ScmSymbol "if", ScmPair(ScmSymbol "value", ScmPair(ScmPair(ScmPair(ScmSymbol "f", ScmNil), ScmPair(ScmSymbol "value", ScmNil)), 
       ScmPair(ScmPair(ScmSymbol "rest", ScmNil), ScmNil)))), ScmNil))))
     )
-  |ScmPair(ScmPair(ScmSymbol "else", rest),_)-> ScmPair(ScmSymbol "begin",rest)
+  
 
   |ScmPair(ScmPair(test,cdr),rest) -> (match rest with 
       |ScmNil -> (ScmPair (ScmSymbol "if",ScmPair(test, ScmPair( ScmPair(ScmSymbol "begin", cdr),ScmNil))))

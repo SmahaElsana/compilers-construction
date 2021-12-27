@@ -222,10 +222,11 @@ module Semantic_Analysis : SEMANTIC_ANALYSIS = struct
       else ((reads_in_lex > 0) && (writes_in_lex > 0)) (*thers is no read and write occurences in the same enclosing environment so the only option is read and write in different cosures*)
 
 
-  let to_box name expr = (**CHANGE HERE*)
+  let to_box name expr =
     let (read_from_stack, write_on_stack) = read_write name expr true (false, false) in
     let read_write_in_closures_list = read_write_allribs name expr in 
-    (occs_in_different_enclosing_env read_write_in_closures_list)||( occs_on_stack_and_heap read_from_stack write_on_stack read_write_in_closures_list)
+    (occs_in_different_enclosing_env read_write_in_closures_list)||
+    ( occs_on_stack_and_heap read_from_stack write_on_stack read_write_in_closures_list)
 
   let rec who_to_box lst body =
     (match lst with
@@ -234,7 +235,7 @@ module Semantic_Analysis : SEMANTIC_ANALYSIS = struct
                                   | VarParam(name, _) -> name
                                   | _ -> raise X_this_should_not_happen) body) then (first::(who_to_box rest body)) else (who_to_box rest body))
   
-
+  (**given signature *)
   let rec box_set expr =
   (* raise X_not_yet_implemented *)
   match expr with
@@ -248,12 +249,12 @@ module Semantic_Analysis : SEMANTIC_ANALYSIS = struct
   | ScmSet'(v,expr1)-> ScmSet'(v, box_set expr1)
   | ScmDef'(v, expr1) -> ScmDef'(v, box_set expr1)
   | ScmOr'(expr_lst)-> ScmOr'(List.map box_set expr_lst)
-  | ScmLambdaSimple'(str_lst, expr_body) -> ScmLambdaSimple'(str_lst, box_inner_scope str_lst expr_body)
-  | ScmLambdaOpt'(str_lst, str_opt, expr_body) -> ScmLambdaOpt'(str_lst, str_opt, box_inner_scope (str_lst@[str_opt]) expr_body)
+  | ScmLambdaSimple'(str_lst, expr_body) -> ScmLambdaSimple'(str_lst, box_set_inner str_lst expr_body)
+  | ScmLambdaOpt'(str_lst, str_opt, expr_body) -> ScmLambdaOpt'(str_lst, str_opt, box_set_inner (str_lst@[str_opt]) expr_body)
   | ScmApplic'(expr1, expr_lst) -> ScmApplic'( box_set expr1, List.map box_set expr_lst)
   | ScmApplicTP'(expr1, expr_lst) -> ScmApplicTP'(box_set expr1, List.map box_set expr_lst)
 
-  and box_inner_scope str_lst body  = 
+  and box_set_inner str_lst body  = 
     let var_params = (List.map (fun e -> let var = tag_lexical_address_for_var e str_lst [] in
                                                         (match var with
                                                         |VarParam(arg_name, minor)-> var
@@ -269,14 +270,16 @@ module Semantic_Analysis : SEMANTIC_ANALYSIS = struct
     in
 
     let boxed_body = box_set_get params body in
-    let boxed_body = box_set boxed_body in
+    (* let boxed_body = box_set boxed_body in *)
     let extended_body = (match (boxed_body) with 
       |ScmSeq' expr_lst -> ScmSeq'(set_params @ expr_lst)
       |_ -> if(List.length params = 0)
               then boxed_body (*none of the params need boxing*)
               else ScmSeq'(set_params @ [boxed_body])) in
-    (box_set extended_body)
-    
+    (box_set extended_body) (** in order to box embeded lambdas *)
+
+
+  (*box the params with the name pname in the body of the lambda which is expr *)  
   and box_p_in_body pname expr =
     match expr with
     | ScmConst' _ -> expr
