@@ -9,6 +9,7 @@
 %define T_SYMBOL 8
 %define T_CLOSURE 9
 %define T_PAIR 10
+%define T_VECTOR 11
 
 %define TYPE_SIZE 1
 %define WORD_SIZE 8
@@ -35,12 +36,14 @@
 %define FLOAT_VAL SKIP_TYPE_TAG
 
 %define STRING_LENGTH SKIP_TYPE_TAG
+%define VECTOR_LENGTH SKIP_TYPE_TAG
 
 %define SYMBOL_VAL SKIP_TYPE_TAG
 
 %macro STRING_ELEMENTS 2
 	lea %1, [%2+TYPE_SIZE+WORD_SIZE]
 %endmacro
+%define VECTOR_ELEMENTS STRING_ELEMENTS
 
 %define CAR SKIP_TYPE_TAG
 
@@ -105,6 +108,35 @@
 %%str_loop_end:
 	pop rcx
 	sub %1, WORD_SIZE+TYPE_SIZE
+%endmacro
+
+; Create a vector of length %2
+; from array of elements in register %3
+; Store result in register %1
+%macro MAKE_VECTOR 3
+	lea %1, [%2+WORD_SIZE+TYPE_SIZE]
+	MALLOC %1, %1
+	mov byte [%1], T_VECTOR
+	mov qword [%1+TYPE_SIZE], %2
+
+    push rbx
+    push rcx
+    push %1
+    add %1,WORD_SIZE+TYPE_SIZE
+    mov rcx, %2
+%%vector_loop:
+    cmp rcx, 0
+    js %%vector_loop_end
+    mov rbx, [%3]
+    mov [%1], rbx
+    add %1, WORD_SIZE
+    add %3, WORD_SIZE
+    dec rcx
+    jmp %%vector_loop
+%%vector_loop_end:
+    pop %1
+    pop rcx
+    pop rbx
 %endmacro
 
 ;;; Creates a SOB with tag %2 
@@ -231,6 +263,7 @@ section .data
 .undefined:
 	db "#<undefined>", 0
 
+section .text
 write_sob_rational:
 	push rbp
 	mov rbp, rsp
@@ -261,6 +294,7 @@ section .data
 .frac_format_string:
 	db "%ld/%ld", 0
 
+section .text
 write_sob_float:
 	push rbp
 	mov rbp, rsp
@@ -288,6 +322,7 @@ section .data
 .float_format_string:
 	db "%f", 0		
 
+section .text
 write_sob_char:
 	push rbp
 	mov rbp, rsp
@@ -369,6 +404,7 @@ section .data
 .regular:
 	db "#\%c", 0
 
+section .text
 write_sob_void:
 	push rbp
 	mov rbp, rsp
@@ -384,6 +420,7 @@ section .data
 .void:
 	db "#<void>", 0
 	
+section .text
 write_sob_bool:
 	push rbp
 	mov rbp, rsp
@@ -410,6 +447,7 @@ section .data
 .true:
 	db "#t", 0
 
+section .text
 write_sob_nil:
 	push rbp
 	mov rbp, rsp
@@ -425,6 +463,7 @@ section .data
 .nil:
 	db "()", 0
 
+section .text
 write_sob_string:
 	push rbp
 	mov rbp, rsp
@@ -538,6 +577,7 @@ section .data
 .fs_backslash:
 	db CHAR_BACKSLASH, CHAR_BACKSLASH, 0
 
+section .text
 write_sob_pair:
 	push rbp
 	mov rbp, rsp
@@ -572,6 +612,7 @@ section .data
 .close_paren:
 	db ")", 0
 
+section .text
 write_sob_pair_on_cdr:
 	push rbp
 	mov rbp, rsp
@@ -620,6 +661,7 @@ section .data
 .dot:
 	db " . ", 0
 
+section .text
 write_sob_symbol:
 	push rbp
 	mov rbp, rsp
@@ -677,6 +719,7 @@ section .data
 .fs_hex_char:
 	db "\x%02x;", 0	
 
+section .text
 write_sob_closure:
 	push rbp
 	mov rbp, rsp
@@ -695,6 +738,67 @@ section .data
 	db "#<closure [env:%p, code:%p]>", 0
 
 section .text
+write_sob_vector:
+    push rbp
+    mov rbp, rsp
+
+    push rsi
+
+    mov rax, 0
+    mov rdi, .vector_open_paren
+    call printf
+
+    mov rsi, [rsp]
+
+    SKIP_TYPE_TAG rcx, rsi
+    VECTOR_ELEMENTS rax, rsi
+
+.loop:
+    cmp rcx, 0
+    je .done
+
+    mov rsi, [rax]
+    push rax
+    push rcx
+    call write_sob
+    pop rcx
+    pop rax
+
+    dec rcx
+    jz .done
+
+    push rax
+    push rcx
+    mov rax, 0
+    mov rdi, .vector_space
+    call printf
+    pop rcx
+    pop rax
+
+    add rax, WORD_SIZE
+    jmp .loop
+
+.done:
+    mov rax, 0
+    mov rdi, .vector_close_paren
+    call printf
+
+    pop rsi
+
+    pop rbp
+    ret
+
+section .data
+.vector_open_paren:
+    db "#(", 0
+
+.vector_space:
+    db " ", 0
+
+.vector_close_paren:
+    db ")", 0
+
+section .text
 write_sob:
 	mov rbx, 0
 	mov bl, byte [rsi]	
@@ -705,7 +809,7 @@ section .data
 	dq write_sob_undefined, write_sob_void, write_sob_nil
 	dq write_sob_rational, write_sob_float, write_sob_bool
 	dq write_sob_char, write_sob_string, write_sob_symbol
-	dq write_sob_closure, write_sob_pair
+	dq write_sob_closure, write_sob_pair, write_sob_vector
 
 section .text
 write_sob_if_not_void:
