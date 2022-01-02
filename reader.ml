@@ -79,6 +79,20 @@
    let nt1 = (caten nt1 (caten nt3 nt4)) in
 
    nt1 str; *)
+
+ (* and nt_matching_comment str = *)
+  and nt_paired_comment str =
+  let nt1 = char '{' in
+  let nt2 = char '}' in
+  let nt3 = star (diff (diff nt_any (char '{')) (char '}')) in
+  let nt4 = caten nt1 (caten nt3 nt2) in 
+  let nt5 = star nt4 in
+  let nt6 = caten nt1 (caten nt5 nt2) in 
+  let nt7 = (pack nt6 (function (_) -> ScmNil)) in
+  let nt7 = unitify(nt7) in 
+  nt7 str
+
+
    
  
 
@@ -100,7 +114,7 @@
    disj_list
      [
       nt_line_comment;
-      (* nt_paired_comment; *)
+      nt_paired_comment;
       unitify (nt_sexpr_comment);
       ] str
  and nt_skip_star str =
@@ -233,6 +247,7 @@
  and nt_char_simple str = const (fun ch -> (int_of_char ch) > 32)
  
  and make_named_char char_name ch = pack (word_ci char_name) (fun e -> ch)
+ 
  and nt_char_named str =
    let nt1 =
      disj_list [(make_named_char "newline" '\n');
@@ -241,6 +256,7 @@
                 (make_named_char "space" ' ');
                 (make_named_char "tab" '\t')] in
    nt1 str
+
  and nt_char_hex str = disj_list[(range_ci 'a' 'f');(range '0' '9');] str
  
  and nt_HexadecimalChar str = 
@@ -288,6 +304,7 @@
  (char(char_of_int(126))) 
  (disj  (char(char_of_int(92))) (char(char_of_int(34))) )) in
  nt1 str
+
  and nt_string_hex_char str =
  (* let nt1 = char_ci 'x' in
  (**let nt1 = word "\\x and \\X"*)
@@ -328,6 +345,7 @@
                  ))) in
  let nt2 = pack nt1 (fun((tilda,(lb,(lsps,(data,(rsps,rb))))))-> ScmPair(ScmSymbol("format"),ScmPair("a",ScmNil))) in
  nt2 str *)
+
  and nt_StringInterpolated str = 
  let nt1 = word "~{" in
  let nt1 = caten nt1 nt_sexpr in
