@@ -33,8 +33,7 @@
   			(lambda (f end lst)
 			  (if(null? lst)
 			  end
-			  (f (car lst) (rfold f end (cdr lst)))))))
-  )
+			  (f (car lst) (rfold f end (cdr lst))))))))
 
 (define cons*
   (let (car car) (cdr cdr) (null? null?) (cons cons))

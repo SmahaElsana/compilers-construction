@@ -39,15 +39,30 @@ module Code_Gen : CODE_GEN = struct
   | [] -> []
   | hd::rest -> hd::(omit_dup (List.filter (fun element -> not (element = hd)) rest));;
 
+  
+
   let rec sub_constants constant =
     (match constant with
     |ScmSymbol str -> [ScmString(str); constant]
-    |ScmPair (car, cdr) -> (sub_constants ( car))@(sub_constants ( cdr)) @ [constant]
-    | _ -> [constant]);;
+    |ScmPair (car, cdr) -> (sub_constants ( car))@[car]@(sub_constants ( cdr))@[cdr] @ [ScmPair (car, cdr)]
+    |ScmVector (lst) -> (subVector lst) @ [constant]
+    | _ -> [constant])
 
-  let offset_in_const_table const cons_table =  string_of_int (fst (List.assoc (const) cons_table)) ;;
+  and subVector lst =
+    match lst with 
+    |[]->[]
+    |hd::rest -> (sub_constants hd) @ (subVector rest)
+  
+
+  let offset_in_const_table const cons_table =  string_of_int (fst (List.assoc const cons_table)) ;;
 
   let offset_in_fvar_table var fvar_table =  string_of_int (List.assoc var fvar_table);;
+
+  let rec vectorSOBs lst cons_table = 
+  match lst with 
+  | [] -> ""
+  | a :: [] -> "const_tbl+"^(string_of_int (fst (List.assoc a cons_table)))
+  | a :: b ->  "const_tbl+"^string_of_int (fst (List.assoc a cons_table))^" , "^ (vectorSOBs b cons_table);;
 
   let rec cct lst offset cons_table = (*takes a list of contants and returns table structure*)
     match lst with 
@@ -60,11 +75,14 @@ module Code_Gen : CODE_GEN = struct
       | ScmString str -> cct rest (offset + 9 + (String.length str)) (cons_table @ [(hd ,( offset, "MAKE_LITERAL_STRING \"" ^ str ^ "\""))])
       | ScmSymbol(str) -> cct rest (offset+9) (cons_table @ [(hd ,( offset, "MAKE_LITERAL_SYMBOL(const_tbl+"^(offset_in_const_table (ScmString str) cons_table)^")"))])
       | ScmNumber(num) ->  (match num with
-                            |ScmRational(a,b) -> cct rest (offset+9) (cons_table @ [(hd ,( offset, "MAKE_LITERAL_RATIONAL("^(string_of_int a)^ ","^(string_of_int a)^")" ))])
+                            |ScmRational(a,b) -> cct rest (offset+9) (cons_table @ [(hd ,( offset, "MAKE_LITERAL_RATIONAL("^(string_of_int a)^ ","^(string_of_int b)^")" ))])
                             |ScmReal(a)-> cct rest (offset+9) (cons_table @ [(hd ,( offset,  "MAKE_LITERAL_FLOAT(" ^ (string_of_float a) ^ ")" ))]) 
                             )
       (*here we need to get the offset of the embeded structures*)
-      | ScmVector(lst) -> cct rest (offset+9 + (List.length lst)) (cons_table @ [(hd ,( offset,"vector in assmbly"))])
+      | ScmVector(lst) ->
+         (* Printf.printf "%s" (vectorSOBs lst cons_table) ; *)
+      let vecList = (vectorSOBs lst cons_table)in
+       cct rest (offset+9 + (List.length lst)) (cons_table @ [(hd ,( offset,"MAKE_LITERAL_VECTOR "^ vecList))])
       | ScmPair(a,b) -> cct rest (offset+17) (cons_table @ [(hd ,( offset, "MAKE_LITERAL_PAIR(" ^(offset_in_const_table a cons_table)^","^(offset_in_const_table b cons_table)^")"))])
     );;
 
@@ -73,8 +91,8 @@ module Code_Gen : CODE_GEN = struct
   let rec find_fvars ast = (**ast is of type expr' *)
     match ast with 
     | ScmConst' _ -> []
-    | ScmVar'(var) | ScmBox'(var) | ScmBoxGet'(var) -> Printf.printf("i found freevar"); (match var with
-                                                      |VarFree v ->Printf.printf(" %s") v; [v]
+    | ScmVar'(var) | ScmBox'(var) | ScmBoxGet'(var) -> (match var with
+                                                      |VarFree v ->[v]
                                                       |_ -> [])
     | ScmBoxSet'(var, expr)| ScmSet'(var,expr)| ScmDef'(var,expr) -> (find_fvars (ScmVar' var))@ (find_fvars expr)
 
@@ -89,7 +107,7 @@ module Code_Gen : CODE_GEN = struct
   
   let rec find_consts ast =
     match ast with 
-    | ScmConst' constant -> Printf.printf("i found constant"); [constant]
+    | ScmConst' constant -> [constant]
     | ScmVar' _  | ScmBox' _ | ScmBoxGet' _ -> []
     | ScmBoxSet'(_, expr) | ScmSet'(_,expr) | ScmDef'(_,expr) -> find_consts expr
 
@@ -101,7 +119,7 @@ module Code_Gen : CODE_GEN = struct
     | ScmLambdaSimple'(_ , body) | ScmLambdaOpt'(_,_,body) -> find_consts body
     
     | ScmApplic'(expr , expr_lst) | ScmApplicTP'(expr , expr_lst) 
-        -> Printf.printf("i found applic"); (find_consts expr)@ (List.fold_right (fun e acc -> acc @ (find_consts e)) expr_lst []);;
+        -> (find_consts expr)@ (List.fold_right (fun e acc -> acc @ (find_consts e)) expr_lst []);;
   
   (*counter to distinguish labels*)
   let counter = ref 0;;
@@ -206,13 +224,13 @@ module Code_Gen : CODE_GEN = struct
     let set_consts = (omit_dup all_consts) in
     let extended_consts = (List.fold_right (fun ast acc -> (sub_constants ast) @ acc) set_consts []) in
     let set_extended_consts = (omit_dup extended_consts) in
-    cct set_extended_consts 6  basic_const_table give an intial consts table and initial offset
+    cct set_extended_consts 6  basic_const_table 
+    (* give an intial consts table and initial offset *)
 
 
 
   let make_fvars_tbl asts = 
-    let basic =
-      [
+    let basic =[
     (* Type queries  *)
     "boolean?"; "flonum?"; "rational?";
     "pair?"; "null?"; "char?"; "string?";
@@ -229,14 +247,16 @@ module Code_Gen : CODE_GEN = struct
     (* Additional rational numebr ops *)
     "numerator"; "denominator"; "gcd";
     (* you can add yours here *)
-  ]
+    (*stdlib*)
+    "fold-left"; "fold-right";"cons*"
+  ] in
        (* ["*"; "+" ; "-" ; "/"; "<"; "=";">";
     "append";"apply";  "boolean?"; "car"; "cdr"; "char->integer"; "char?"; "cons"; "cons*"
     ; "denominator"; "eq?"; "equal?"; "exact->inexact"; "flonum?"; "fold-left"; "fold-right"; "gcd"
     ; "integer?";"integer->char"; "length"; "list" ; "list?";"make-string"; "map";"not"; "null?"; "number?";
      "numerator"; "pair?"; "procedure?"; "rational?"; "set-car!"; "set-cdr!";
     "string->list"; "string-length"; "string-ref"; "string-set!"; "string?"; "symbol?"; "symbol->string";"zero?"] *)
-   in
+   
     (* raise X_not_yet_implemented;; *)
     let all_fvars = basic @ (List.fold_right (fun ast acc -> (find_fvars ast) @ acc) asts []) in
     let fvar_set = (omit_dup all_fvars) in

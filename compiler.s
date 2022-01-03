@@ -155,7 +155,7 @@
         dq %3
 %endmacro
 
-// my addition
+; my addition
 %macro MAKE_LITERAL 2 ; Make a literal of type %1 followed by the definition %2
 db %1
 %2
@@ -167,6 +167,15 @@ dq (%%end_str - %%str)
 %%str:
 db %1
 %%end_str:
+%endmacro
+
+%macro MAKE_LITERAL_VECTOR 0-*
+	db	T_VECTOR
+	dq	%0
+%rep %0
+	dq %1
+%rotate 1
+%endrep
 %endmacro
 
 
@@ -185,38 +194,7 @@ db %1
 
 %define MAKE_LITERAL_FLOAT(val) \
 	MAKE_LITERAL T_FLOAT, dq val
-
-%macro MAKE_VECTOR 3 ; Create a vector of length %2
-					; from SOB at %3.
-					; Stores result in register %1
-	lea %1, [%2*WORD_BYTES + WORD_BYTES+TYPE_SIZE]
-	MALLOC %1, %1
-	mov byte [%1], T_VECTOR
-	mov qword [%1+TYPE_SIZE], %2
-	push rcx
-	add %1, WORD_BYTES + TYPE_SIZE
-	mov rcx, %2
-	cmp rcx, 0
-%%vec_loop:
-	jz %%vec_loop_end
-	dec rcx
-	mov qword [%1 + rcx*WORD_BYTES], %3
-	jmp %%vec_loop
-%%vec_loop_end:
-	sub %1, WORD_BYTES + TYPE_SIZE
-	pop rcx
-%endmacro
-
-%macro MAKE_LITERAL_VECTOR 0-*
-	db T_VECTOR
-	dq %0
-%rep %0
-	dq %1
-%rotate 1
-%endrep
-%endmacro
-
-//finishes here
+;finishes here
 
 
 %define MAKE_RATIONAL(r, num, den) \

@@ -347,6 +347,22 @@ module Prims : PRIMS = struct
          neg rdx
          .make_result:
          MAKE_RATIONAL(rax, rdx, 1)", make_binary, "gcd";  
+        (*car*)
+         "CAR rax, rsi", make_unary,"car";
+        (*set-car!*)
+        "mov [rsi+1], rdi
+         mov rax, SOB_VOID_ADDRESS
+         ", make_binary , "set_car"; 
+        (*cdr*)
+         "CDR rax, rsi", make_unary, "cdr";
+        (*set-cdr!*)
+        "mov [rsi+9], rdi
+         mov rax, SOB_VOID_ADDRESS
+        ", make_binary , "set_cdr";
+        (*cons*)
+         "MAKE_PAIR(rax, rsi, rdi)", make_binary, "cons"; 
+        (*apply*)
+         "ADD ASSEMBLY FOR APPLY HERE",make_unary,"apply";
       ] in
     String.concat "\n\n" (List.map (fun (a, b, c) -> (b c a)) misc_parts);;
 
