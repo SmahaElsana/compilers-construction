@@ -75,15 +75,15 @@ module Code_Gen : CODE_GEN = struct
       | ScmString str -> cct rest (offset + 9 + (String.length str)) (cons_table @ [(hd ,( offset, "MAKE_LITERAL_STRING \"" ^ str ^ "\""))])
       | ScmSymbol(str) -> cct rest (offset+9) (cons_table @ [(hd ,( offset, "MAKE_LITERAL_SYMBOL(const_tbl+"^(offset_in_const_table (ScmString str) cons_table)^")"))])
       | ScmNumber(num) ->  (match num with
-                            |ScmRational(a,b) -> cct rest (offset+9) (cons_table @ [(hd ,( offset, "MAKE_LITERAL_RATIONAL("^(string_of_int a)^ ","^(string_of_int b)^")" ))])
+                            |ScmRational(a,b) -> cct rest (offset+17) (cons_table @ [(hd ,( offset, ";;"^(string_of_int offset)^"\nMAKE_LITERAL_RATIONAL("^(string_of_int a)^ ","^(string_of_int b)^")" ))])
                             |ScmReal(a)-> cct rest (offset+9) (cons_table @ [(hd ,( offset,  "MAKE_LITERAL_FLOAT(" ^ (string_of_float a) ^ ")" ))]) 
                             )
       (*here we need to get the offset of the embeded structures*)
       | ScmVector(lst) ->
          (* Printf.printf "%s" (vectorSOBs lst cons_table) ; *)
       let vecList = (vectorSOBs lst cons_table)in
-       cct rest (offset+9 + (List.length lst)) (cons_table @ [(hd ,( offset,"MAKE_LITERAL_VECTOR "^ vecList))])
-      | ScmPair(a,b) -> cct rest (offset+17) (cons_table @ [(hd ,( offset, "MAKE_LITERAL_PAIR(" ^(offset_in_const_table a cons_table)^","^(offset_in_const_table b cons_table)^")"))])
+       cct rest (offset+9 + 8*(List.length lst)) (cons_table @ [(hd ,( offset,"MAKE_LITERAL_VECTOR "^ vecList))])
+      | ScmPair(a,b) -> cct rest (offset+17) (cons_table @ [(hd ,( offset, ";;"^(string_of_int offset)^"\nMAKE_LITERAL_PAIR(const_tbl+" ^(string_of_int (fst (List.assoc a cons_table)))^", const_tbl+"^(string_of_int (fst (List.assoc b cons_table)))^")"))])
     );;
 
 
@@ -134,7 +134,9 @@ module Code_Gen : CODE_GEN = struct
 
   let rec generate_helper consts fvars e env_size =
     match e with
-    | ScmConst' c -> "mov rax, const_tbl + "^(offset_in_const_table c consts)^ "\n"
+    | ScmConst' c -> "  mov rax, const_tbl +"
+    ^(string_of_int (fst (List.assoc c consts)))
+    ^ "\n"
 
     | ScmVar'(VarParam(str,minor)) -> "mov rax, PVAR("^(string_of_int minor)^")\n"
     | ScmSet'(VarParam(_,minor), expr1) -> (generate_helper consts fvars expr1 env_size)^
@@ -148,9 +150,9 @@ module Code_Gen : CODE_GEN = struct
                                                              mov rbx, qword [rbx + 8 ∗"^(string_of_int major)^"]
                                                              mov qword [rbx + 8 ∗ "^(string_of_int minor)^"], rax
                                                              mov rax,  SOB_VOID_ADDRESS\n"
-    | ScmVar'(VarFree(str)) -> "mov rax, qword [fvars_tbl + 8 * "^(offset_in_fvar_table str fvars)^"]\n"
+    | ScmVar'(VarFree(str)) -> "mov rax, qword [fvar_tbl + "^(offset_in_fvar_table str fvars)^"]\n"
     | ScmSet'(VarFree(str), expr1) -> (generate_helper consts fvars expr1 env_size)^ 
-                                              "mov qword [fvars_tbl + 8 * "^(offset_in_fvar_table str fvars)^"], rax
+                                              "mov qword [fvar_tbl + "^(offset_in_fvar_table str fvars)^"], rax
                                                mov rax, SOB_VOID_ADDRESS\n"
     | ScmSeq'(expr_lst) -> List.fold_left (fun acc expr -> acc ^ (generate_helper consts fvars expr env_size)) "" expr_lst
 
@@ -189,30 +191,41 @@ module Code_Gen : CODE_GEN = struct
 
       let rec applicLoop lst =
         match lst with
-        |[] -> (generate_helper consts fvars expr env_size)^"Verify that rax has type closure
+        |[] -> (generate_helper consts fvars expr env_size)
+        (* ^"Verify that rax has type closure
                 push rax→ env
-                call rax→ code\n"
+                call rax→ code\n" *)
         |hd::[] -> (generate_helper consts fvars hd env_size)^ "push rax
-        push "^(string_of_int n)^"\n"^ (generate_helper consts fvars expr env_size)^"Verify that rax has type closure
+        push "^(string_of_int n)^"\n"^ (generate_helper consts fvars expr env_size)
+        (* ^"Verify that rax has type closure
         push rax→ env
-        call rax→ code\n"
+        call rax→ code\n" *)
         |hd::rest -> (generate_helper consts fvars hd env_size)^ "push rax\n" ^(applicLoop rest)  in
-      applicLoop expr_lst
+      (applicLoop expr_lst) ^ 
+      " CLOSURE_ENV rbx, rax      ; rbx = rax -> env
+      push rbx
+      CLOSURE_CODE rax, rax     ; rax = rax -> code
+      call rax                  ; do proc(params)
+      ;; and now let's clean the stack
+      add rsp, WORD_SIZE * 1    ; pop env
+      pop rbx                   ; pop arg count
+      shl rbx, 3                ; rbx = rbx * 8
+      add rsp, rbx              ; pop args\n"
+      
+
+    | ScmDef'(VarFree(str),expr) -> "mov qword[fvar_tbl + WORD_SIZE*"^(string_of_int (List.assoc str fvars))^"] , rax
+    mov rax,SOB_VOID_ADDRESS\n"
 
     | _ -> ""
 
-    (* | ScmVar' of var' *)
+   
     (* | ScmBox' of var' *)
-    (* | ScmBoxGet' of var' *)
-    (* | ScmBoxSet' of var' * expr' *)
-    (* | ScmIf' of expr' * expr' * expr' *)
-    (* | ScmSeq' of expr' list *)
-    (* | ScmSet' of var' * expr' *)
+    
     (* | ScmDef' of var' * expr' *)
-    (* | ScmOr' of expr' list *)
+    
     (* | ScmLambdaSimple' of string list * expr' *)
     (* | ScmLambdaOpt' of string list * string * expr' *)
-    (* | ScmApplic' of expr' * (expr' list) *)
+    
     (* | ScmApplicTP' of expr' * (expr' list);; *)
 
 

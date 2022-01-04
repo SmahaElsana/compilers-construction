@@ -18,74 +18,7 @@ MAKE_VOID
 MAKE_NIL
 MAKE_BOOL(0)
 MAKE_BOOL(1)
-MAKE_LITERAL_STRING "define"
-MAKE_LITERAL_SYMBOL(const_tbl+6)
-MAKE_LITERAL_STRING "y"
-MAKE_LITERAL_SYMBOL(const_tbl+30)
-;;49
 MAKE_LITERAL_RATIONAL(5,1)
-;;66
-MAKE_LITERAL_PAIR(const_tbl+49, const_tbl+1)
-;;83
-MAKE_LITERAL_PAIR(const_tbl+40, const_tbl+66)
-;;100
-MAKE_LITERAL_PAIR(const_tbl+21, const_tbl+83)
-MAKE_LITERAL_STRING "x"
-MAKE_LITERAL_SYMBOL(const_tbl+117)
-;;136
-MAKE_LITERAL_RATIONAL(10,1)
-;;153
-MAKE_LITERAL_PAIR(const_tbl+136, const_tbl+1)
-;;170
-MAKE_LITERAL_PAIR(const_tbl+127, const_tbl+153)
-;;187
-MAKE_LITERAL_PAIR(const_tbl+21, const_tbl+170)
-MAKE_LITERAL_STRING "set!"
-MAKE_LITERAL_SYMBOL(const_tbl+204)
-MAKE_LITERAL_STRING "if"
-MAKE_LITERAL_SYMBOL(const_tbl+226)
-MAKE_LITERAL_STRING "quote"
-MAKE_LITERAL_SYMBOL(const_tbl+246)
-;;269
-MAKE_LITERAL_RATIONAL(1,1)
-;;286
-MAKE_LITERAL_RATIONAL(2,1)
-;;303
-MAKE_LITERAL_RATIONAL(3,1)
-;;320
-MAKE_LITERAL_PAIR(const_tbl+303, const_tbl+1)
-;;337
-MAKE_LITERAL_PAIR(const_tbl+286, const_tbl+320)
-;;354
-MAKE_LITERAL_PAIR(const_tbl+269, const_tbl+337)
-;;371
-MAKE_LITERAL_PAIR(const_tbl+354, const_tbl+1)
-;;388
-MAKE_LITERAL_PAIR(const_tbl+260, const_tbl+371)
-;;405
-MAKE_LITERAL_PAIR(const_tbl+388, const_tbl+1)
-;;422
-MAKE_LITERAL_PAIR(const_tbl+127, const_tbl+405)
-;;439
-MAKE_LITERAL_PAIR(const_tbl+2, const_tbl+422)
-;;456
-MAKE_LITERAL_PAIR(const_tbl+237, const_tbl+439)
-;;473
-MAKE_LITERAL_PAIR(const_tbl+456, const_tbl+1)
-;;490
-MAKE_LITERAL_PAIR(const_tbl+40, const_tbl+473)
-;;507
-MAKE_LITERAL_PAIR(const_tbl+217, const_tbl+490)
-;;524
-MAKE_LITERAL_PAIR(const_tbl+40, const_tbl+1)
-;;541
-MAKE_LITERAL_PAIR(const_tbl+507, const_tbl+524)
-;;558
-MAKE_LITERAL_PAIR(const_tbl+40, const_tbl+541)
-;;575
-MAKE_LITERAL_PAIR(const_tbl+187, const_tbl+558)
-;;592
-MAKE_LITERAL_PAIR(const_tbl+100, const_tbl+575)
 
 ;;; These macro definitions are required for the primitive
 ;;; definitions in the epilogue to work properly
@@ -175,7 +108,7 @@ user_code_fragment:
 ;;; The code you compiled will be added here.
 ;;; It will be executed immediately after the closures for 
 ;;; the primitive procedures are set up.
-  mov rax, const_tbl +592
+  mov rax, const_tbl +6
 
 	call write_sob_if_not_void;;; Clean up the dummy frame, set the exit status to 0 ("success"), 
    ;;; and return from main
