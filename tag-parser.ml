@@ -25,6 +25,12 @@ exception X_bad_MIT;;
 exception X_bad_letrec;;
 exception X_bad_let;;
 exception X_bad_lambda_body;;
+exception X_letrec;;
+exception X_letrec_ribs;;
+exception X_define;;
+exception X_let;;
+exception X_lambda_argshelper;;
+exception X_bad_letstar;;
 
 exception X_vars_duplicated;;
 
@@ -209,14 +215,14 @@ let rec  check_duplications lst =
 let rec lambdaOpt_args_creat args lst = match args with         
         | ScmPair(ScmSymbol(s), rest) -> lambdaOpt_args_creat rest (lst@[s])
         | ScmSymbol(last) -> (lst, last)
-        |_-> raise X_my_exception;;
+        |_-> raise X_letrec;;
 
 let lambdaOpt_args args = lambdaOpt_args_creat args [];;
 
 let rec simple_lambda_args_helper args lst = match args with         
         | ScmPair(ScmSymbol(s), rest) -> simple_lambda_args_helper rest (lst@[s])
         | ScmNil -> lst 
-        | _-> raise X_my_exception;;
+        | _-> raise X_lambda_argshelper;;
 
 let simple_lambda_args args = simple_lambda_args_helper args [];;
 
@@ -224,7 +230,7 @@ let rec letrec_ribs ribs =
   (match ribs with
   | ScmNil -> ScmNil
   | ScmPair(ScmPair(ScmSymbol var, ScmPair(varval, ScmNil)), rest) -> ScmPair(ScmPair(ScmSymbol var, ScmPair(ScmPair(ScmSymbol "quote", ScmPair(ScmSymbol "whatever", ScmNil)), ScmNil)), (letrec_ribs rest))
-  | _ -> raise X_my_exception);;
+  | _ -> raise X_letrec_ribs);;
 
   let rec letrec_body ribs body =
     (match ribs with
@@ -232,7 +238,7 @@ let rec letrec_ribs ribs =
       ( ScmPair(ScmPair(ScmSymbol "set!", ScmPair(var, ScmPair(varval, ScmNil))), (letrec_body rest body)))
     |ScmPair(e, ScmNil)-> ScmPair(e,body)
     | ScmNil -> body
-    | _ -> raise X_my_exception);;
+    | _ -> raise X_bad_letrec);;
 
 let rec tag_parse_expression sexpr =
 let sexpr = macro_expand sexpr in
@@ -261,6 +267,7 @@ match sexpr with
 |ScmPair (ScmSymbol "or", sexpr_pairs) -> (match sexpr_pairs with
                                             |ScmNil -> ScmConst (ScmBoolean false)
                                             |ScmPair (sexp, ScmNil)-> tag_parse_expression sexp
+                                            (**new addition *)
                                             | ScmPair(sexpr1, cdr)-> ScmOr( List.map tag_parse_expression (scm_list_to_list sexpr_pairs))
                                             |_ -> raise X_got_to_or)
 (*2.1.5 Lambda forms*)
@@ -291,7 +298,9 @@ match sexpr with
                                                   (match value with
                                                         | ScmNil -> ScmDef (exp_var_name, ScmConst(ScmVoid)) (*check again HERE*)
                                                         | ScmPair(valSexp, ScmNil) -> ScmDef (exp_var_name, (tag_parse_expression valSexp)) 
-                                                        | _ -> raise X_my_exception))
+                                                        (**new addition *)
+                                                        (* | ScmPair(_,_) -> ScmDef(exp_var_name, tag_parse_expression(macro_expand(value)))  *)
+                                                        |_ -> raise X_define))
 
 (*2.1.7 Assignments*)
 (* |ScmPair(ScmSymbol "set!",ScmPair(varname, ScmPair(sexpr,ScmNil))) -> ScmPair(tag_parse_expression varname, tag_parse_expression sexpr ) *)
@@ -363,13 +372,13 @@ match sexpr with
                 (fun rib_lst (vars, vals) ->
                     match rib_lst with
                     | ScmPair(var, ScmPair(value, ScmNil)) -> (ScmPair(var, vars), ScmPair(value, vals))
-                    | _ -> raise X_my_exception) 
+                    | _ -> raise X_let) 
 
                 (scm_list_to_list ribs) 
                 (ScmNil, ScmNil) 
               in
              (ScmPair(ScmPair(ScmSymbol "lambda", ScmPair(vars, body)), vals))
-  | _ -> raise X_my_exception)
+  | _ -> raise X_bad_lambda_body)
 
 (*let* *)
 |ScmPair(ScmSymbol "let*",ScmPair(n_exps,body)) ->
@@ -377,13 +386,13 @@ match sexpr with
   |ScmNil -> macro_expand(ScmPair(ScmSymbol "let",ScmPair(ScmNil,body)))
   |ScmPair(r,ScmNil) -> macro_expand(ScmPair(ScmSymbol "let",ScmPair(ScmPair(r,ScmNil),body)))
   |ScmPair(r, ribs) -> macro_expand(ScmPair(ScmSymbol "let", ScmPair(ScmPair(r, ScmNil), ScmPair(ScmPair(ScmSymbol "let*", ScmPair(ribs, body)), ScmNil))))
-  |_-> raise X_my_exception)
+  |_-> raise X_bad_letstar)
 
 (*letrec*)
 |ScmPair(ScmSymbol "letrec", ScmPair(ribs, body)) -> 
   (match ribs with 
   |ScmNil ->  macro_expand(ScmPair(ScmSymbol "let", ScmPair(ScmNil, body))) 
-  | ScmPair(first_rib, rest_ribs) -> macro_expand(ScmPair(ScmSymbol "let", ScmPair((letrec_ribs ribs), (letrec_body ribs body))))
+  |ScmPair(first_rib, rest_ribs) -> macro_expand(ScmPair(ScmSymbol "let", ScmPair((letrec_ribs ribs), (letrec_body ribs body))))
   |_ -> raise X_bad_letrec)
 
 (*2.5 Handling quasiquote-expressions*)
@@ -391,5 +400,4 @@ match sexpr with
 
 | _ -> sexpr
 end;; 
-
 

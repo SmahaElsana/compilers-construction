@@ -362,7 +362,7 @@ module Prims : PRIMS = struct
         (*cons*)
          "MAKE_PAIR(rax, rsi, rdi)", make_binary, "cons"; 
         (*apply*)
-         (* "ADD ASSEMBLY FOR APPLY HERE",make_unary,"apply"; *)
+        "",make_unary,"apply";
       ] in
     String.concat "\n\n" (List.map (fun (a, b, c) -> (b c a)) misc_parts);;
 

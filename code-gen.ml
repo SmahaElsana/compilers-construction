@@ -83,7 +83,10 @@ module Code_Gen : CODE_GEN = struct
          (* Printf.printf "%s" (vectorSOBs lst cons_table) ; *)
       let vecList = (vectorSOBs lst cons_table)in
        cct rest (offset+9 + 8*(List.length lst)) (cons_table @ [(hd ,( offset,"MAKE_LITERAL_VECTOR "^ vecList))])
-      | ScmPair(a,b) -> cct rest (offset+17) (cons_table @ [(hd ,( offset, ";;"^(string_of_int offset)^"\nMAKE_LITERAL_PAIR(const_tbl+" ^(string_of_int (fst (List.assoc a cons_table)))^", const_tbl+"^(string_of_int (fst (List.assoc b cons_table)))^")"))])
+      | ScmPair(a,b) ->
+         cct rest (offset+17) 
+         (cons_table @ [(hd ,( offset, ";;"^(string_of_int offset)^
+         "\nMAKE_LITERAL_PAIR(const_tbl+" ^(string_of_int (fst (List.assoc a cons_table)))^", const_tbl+"^(string_of_int (fst (List.assoc b cons_table)))^")"))])
     );;
 
 
@@ -137,22 +140,30 @@ module Code_Gen : CODE_GEN = struct
     | ScmConst' c -> "  mov rax, const_tbl +"
     ^(string_of_int (fst (List.assoc c consts)))
     ^ "\n"
-
+  
     | ScmVar'(VarParam(str,minor)) -> "mov rax, PVAR("^(string_of_int minor)^")\n"
+
     | ScmSet'(VarParam(_,minor), expr1) -> (generate_helper consts fvars expr1 env_size)^
-                                                    "mov qword [rbp + 8 ∗ (4 + "^(string_of_int minor)^")], rax
-                                                     mov rax,  SOB_VOID_ADDRESS\n"
-    | ScmVar'(VarBound(_, major, minor)) ->  "mov rax, qword [rbp + 8 ∗ 2]
-                                              mov rax, qword [rax + 8 ∗ "^(string_of_int major)^"]
-                                              mov rax, qword [rax + 8 ∗ "^(string_of_int minor)^"]\n"
+                                                    "mov qword[rbp+WORD_SIZE *(4+"^(string_of_int minor)^")] ,rax
+                                                    mov rax, SOB_VOID_ADDRESS\n"
+                                                    
+    | ScmVar'(VarBound(_, major, minor)) -> "
+    mov rax ,qword[rbp + WORD_SIZE*2]
+    mov rax ,qword[rax + WORD_SIZE*"^(string_of_int major)^"]
+    mov rax, qword[rax + WORD_SIZE*"^(string_of_int minor)^"]\n"
+      
     | ScmSet'(VarBound(_, major, minor), expr1) -> (generate_helper consts fvars expr1 env_size)^
-                                                            "mov rbx, qword [rbp + 8 ∗ 2]
+    "mov rbx, qword[rbp+WORD_SIZE*2]
+    mov rbx, qword[rbx+WORD_SIZE*"^(string_of_int major)^"]
+    mov qword[rbx+WORD_SIZE*"^(string_of_int minor)^"],rax
+    mov rax,SOB_VOID_ADDRESS\n"
+                                                            (* "mov rbx, qword [rbp + 8 ∗ 2]
                                                              mov rbx, qword [rbx + 8 ∗"^(string_of_int major)^"]
                                                              mov qword [rbx + 8 ∗ "^(string_of_int minor)^"], rax
-                                                             mov rax,  SOB_VOID_ADDRESS\n"
-    | ScmVar'(VarFree(str)) -> "mov rax, qword [fvar_tbl + "^(offset_in_fvar_table str fvars)^"]\n"
+                                                             mov rax,  SOB_VOID_ADDRESS\n" *)
+    | ScmVar'(VarFree(str)) -> "mov rax, qword [fvar_tbl + WORD_SIZE*"^(offset_in_fvar_table str fvars)^"]\n"
     | ScmSet'(VarFree(str), expr1) -> (generate_helper consts fvars expr1 env_size)^ 
-                                              "mov qword [fvar_tbl + "^(offset_in_fvar_table str fvars)^"], rax
+                                              "mov qword [fvar_tbl + WORD_SIZE*"^(offset_in_fvar_table str fvars)^"], rax
                                                mov rax, SOB_VOID_ADDRESS\n"
     | ScmSeq'(expr_lst) -> List.fold_left (fun acc expr -> acc ^ (generate_helper consts fvars expr env_size)) "" expr_lst
 
@@ -168,44 +179,55 @@ module Code_Gen : CODE_GEN = struct
     | ScmIf'(test,dit,dif) -> let idxLabels = idx_labels ["Lexit";"Lelse"] in
                               let exitl = List.nth idxLabels 0 in
                               let elsel = List.nth idxLabels 1 in
+                              ";;IF HEEEEEEERE \n"^
         (generate_helper consts fvars test env_size)^"cmp rax, SOB_FALSE_ADDRESS
         je "^elsel^"\n"^(generate_helper consts fvars dit env_size)^"jmp "^ exitl^"
         "^elsel^":\n"^(generate_helper consts fvars dif env_size)^"\n"^ exitl ^":\n"
-    | ScmBoxGet'(v) -> "mov rax, qword [rax]\n"
+
+    | ScmBoxGet'(v) -> (generate_helper consts fvars (ScmVar'(v)) env_size)^"\nmov rax, qword [rax]\n"
     | ScmBoxSet'((v), expr) -> (generate_helper consts fvars expr env_size) ^ "push rax\n" ^
                                         (generate_helper consts fvars (ScmVar'(v)) env_size) ^"pop qword [rax]
                                                                                                mov rax, SOB_VOID_ADDRESS\n"
-    | ScmLambdaSimple'(str_lst,body) -> 
-      let lbls = idx_labels ["Lcode"; "Lcont";] in
-      let codel = List.nth lbls 0 in
-      let contl = List.nth lbls 1 in
-      codel^":
-      push rbp
-      mov rbp , rsp
-      "^(generate_helper consts fvars body (env_size+1))^"
-      leave
-      ret
-      "^contl ^":"
     | ScmApplic'(expr,expr_lst) -> 
-      let n = List.length expr_lst in
+        (* List.fold_left (fun acc param -> (generate_helper consts fvars param env_size) ^ "push rax\n" ^ acc)
 
-      let rec applicLoop lst =
+                                              ("push " ^ string_of_int (List.length expr_lst) ^ "\n" ^
+                                              (generate_helper consts fvars expr env_size) ^
+                                               "
+                                                CLOSURE_ENV rbx, rax      ; rbx = rax -> env
+                                                push rbx
+                                                CLOSURE_CODE rdx, rax     ; rax = rax -> code
+                                                call rdx                  ; do proc(params)
+
+                                                ;; and now let's clean the stack
+                                                add rsp, WORD_SIZE * 1    ; pop env
+                                                pop rbx                   ; pop arg count
+                                                shl rbx, 3                ; rbx = rbx * 8
+                                                add rsp, rbx              ; pop args\n")
+                                                expr_lst *)
+
+        (* let rec applicPrms lst =
+          (match lst with 
+          |[] -> "\n"
+          |hd::rest -> (generate_helper consts fvars hd env_size)^ "\npush rax\n" ^ (applicPrms)) in *)
+        
+        let n = (List.length expr_lst) in                                       
+        let rec applicLoop lst =
         match lst with
-        |[] -> (generate_helper consts fvars expr env_size)
-        (* ^"Verify that rax has type closure
-                push rax→ env
-                call rax→ code\n" *)
-        |hd::[] -> (generate_helper consts fvars hd env_size)^ "push rax
-        push "^(string_of_int n)^"\n"^ (generate_helper consts fvars expr env_size)
-        (* ^"Verify that rax has type closure
-        push rax→ env
-        call rax→ code\n" *)
-        |hd::rest -> (generate_helper consts fvars hd env_size)^ "push rax\n" ^(applicLoop rest)  in
-      (applicLoop expr_lst) ^ 
-      " CLOSURE_ENV rbx, rax      ; rbx = rax -> env
+        |[] -> ""
+        |hd::rest -> (generate_helper consts fvars hd env_size)^ "\npush rax\n" ^(applicLoop rest)   in
+
+      ";; APPLIC IS HINAAAA \n"^
+      (applicLoop (List.rev expr_lst))
+      (* (List.fold_left (fun acc param -> (generate_helper consts fvars param env_size) ^ "push rax\n" ^ acc) "" expr_lst) *)
+      ^ "\npush "^(string_of_int (List.length expr_lst))^"\n"^(generate_helper consts fvars expr env_size)^
+      "\n 
+      CLOSURE_ENV rbx, rax
+      ;; RBX HOLDS THE ADDRESS OF THE ENV OF THE CLOSURE POINTED TO BY RAX REGITER      
       push rbx
-      CLOSURE_CODE rax, rax     ; rax = rax -> code
-      call rax                  ; do proc(params)
+      ;; WE PUSH THE RBX SO THAT WE DONT OVERRIDE THE RBX REGISTER THAT POINTS TO THE CLOSURE ENV
+      CLOSURE_CODE rdx, rax     ; rax = rax -> code
+      call rdx                  ; do proc(params)
       ;; and now let's clean the stack
       add rsp, WORD_SIZE * 1    ; pop env
       pop rbx                   ; pop arg count
@@ -213,20 +235,656 @@ module Code_Gen : CODE_GEN = struct
       add rsp, rbx              ; pop args\n"
       
 
-    | ScmDef'(VarFree(str),expr) -> "mov qword[fvar_tbl + WORD_SIZE*"^(string_of_int (List.assoc str fvars))^"] , rax
+    | ScmDef'(VarFree(str),expr) -> 
+    (generate_helper consts fvars expr env_size)^"mov qword[fvar_tbl + WORD_SIZE*"^(string_of_int (List.assoc str fvars))^"] , rax
     mov rax,SOB_VOID_ADDRESS\n"
 
-    | _ -> ""
+    | ScmLambdaSimple'(str_lst ,body) -> 
+      let lbls = idx_labels ["lambdaEnv";"lambdaEnvEnd";"lCopyParams";"lCopyParamsEnd";"Lcode"; "Lcont"] in
+      let lambdaEnv = (List.nth lbls 0 ) in
+      let lambdaEnvEnd = (List.nth lbls 1) in
+      let lCopyParams = (List.nth lbls 2) in
+      let lCopyParamsEnd = (List.nth lbls 3) in
+      let lcode = (List.nth lbls 4) in
+      let lcont = (List.nth lbls 5) in
+     ( match env_size with
+      |0 -> 
+    ";; THE INITIAL ENVIRONMENT IS EMPTY SO THERE IS NOTHING TO COPY
+    mov rdx, SOB_NIL_ADDRESS
+    ;;NOW WE TRY TO COPY PARAMS IF EXIST
+    mov rcx,qword[rbp + 3 * WORD_SIZE] ;;rcx holds the number of params
+    cmp rcx, 0
+    je "^lCopyParamsEnd^" ;;---> NO PARAMS TO COPY JUMP TO END
 
+    mov rax, qword[rbp + 3 * WORD_SIZE]
+    shl rax, 3
+  ;;NOW RAX HOLDS THE NUMBER OF BYTES WE WANT TO ALLOCATE
+  ;; cmp rcx, 0
+;; je "^lCopyParamsEnd^
+"
+    MALLOC rax, rax
+;;MALLOC rax, WORD_SIZE * rcx ;;rax holds the address of the newly allocated array for params in extenv
+    mov qword[rdx], rax
+
+  "^lCopyParams^":
+;;cmp rcx,0 
+;;je "^lCopyParamsEnd^"
+    mov r10, PVAR(rcx - 1) 
+    mov [rax+ 8*(rcx-1)], r10
+    dec rcx
+    cmp rcx,0
+    jne "^lCopyParams^"
+;;jmp "^lCopyParams^"
+    
+    "^lCopyParamsEnd^":
+    MAKE_CLOSURE(rax, rdx, "^lcode^")
+
+    jmp "^lcont^"\n"
+  ^lcode^":
+
+    push rbp
+    mov rbp , rsp
+    "^ (generate_helper consts fvars body (env_size+1))^"
+    leave
+    ret
+  "^lcont^":\n"
+
+  |_ ->
+
+      ";;LAMBDA IS HIIINA\n
+  ;;mov rdx, SOB_NIL_ADDRESS
+;; mov rcx,"^((string_of_int env_size)) ^"
+;;cmp rcx , 0
+;;je "^lambdaEnvEnd^"
+
+      mov rcx,"^((string_of_int env_size)) ^"
+      MALLOC rdx , WORD_SIZE * "^(string_of_int (env_size+1))^" ;;rdx points to extended env
+      mov rbx, qword[rbp + WORD_SIZE*2] ;;point to lex env
+    "^lambdaEnv^":
+;;cmp rcx, 0
+;; je "^lambdaEnvEnd^"
+      mov r10, qword[rbx + WORD_SIZE*(rcx-1)]
+      mov qword[rdx + WORD_SIZE*rcx], r10
+      dec rcx
+      cmp rcx, 0
+      jne "^lambdaEnv^" 
+;; jmp "^lambdaEnv^" 
+    "^lambdaEnvEnd^":
+
+    ;;NOW WE TRY TO COPY PARAMS IF EXIST
+      mov rcx,qword[rbp + 3 * WORD_SIZE] ;;rcx holds the number of params
+      cmp rcx, 0
+      je "^lCopyParamsEnd^" 
+
+      mov rax, qword[rbp + 3 * WORD_SIZE]
+      shl rax, 3
+  ;;  cmp rcx, 0
+;;  je "^lCopyParamsEnd^"
+      MALLOC rax, rax
+  ;;MALLOC rax, WORD_SIZE * rcx ;;rax holds the address of the newly allocated array for params in extenv
+      mov qword[rdx], rax
+
+    "^lCopyParams^":
+;;cmp rcx,0 
+;;je "^lCopyParamsEnd^"
+      mov r10, PVAR(rcx - 1) 
+      mov [rax+ 8*(rcx-1)], r10
+      dec rcx
+      cmp rcx,0
+      jne "^lCopyParams^"
+;;jmp "^lCopyParams^"
+      
+      "^lCopyParamsEnd^":
+      MAKE_CLOSURE(rax, rdx, "^lcode^")
+
+      jmp "^lcont^"\n"
+    ^lcode^":
+
+      push rbp
+      mov rbp , rsp
+      "^ (generate_helper consts fvars body (env_size+1))^"
+      leave
+      ret
+    "^lcont^":\n"
+     )
+
+
+    | ScmBox'(var) ->
+      (* "MALLOC rdx, WORD_SIZE\n" ^ *)
+                  (generate_helper consts fvars (ScmVar' var) env_size) ^ (**return value of generate_helper is saved in rax*)
+                  "MALLOC rdx, WORD_SIZE
+                  mov qword [rdx], rax
+                  ;;RAX HOLDS THA RETURNED VALUE OF THE GENERATE_HELPER FUNCTION
+                  ;;RDX HOLDS THE ADDRESS OF SPACE ALLOCATED
+                   mov rax, rdx\n"
+
+    | ScmLambdaOpt'(str_lst, str_opt, expr) ->
+      let lbls = idx_labels ["lambdaEnv";"lambdaEnvEnd";"lCopyParams";"lCopyParamsEnd";"Lcode"; "Lcont";"Lequals";"shiftdown";"shrinkstack";"doneadjust";"createList";"addParams2lst";"createClosure";"copyEnv";"shiftup"] in
+      let lambdaEnv = (List.nth lbls 0 ) in
+      let lambdaEnvEnd = (List.nth lbls 1) in
+      let lCopyParams = (List.nth lbls 2) in
+      let lCopyParamsEnd = (List.nth lbls 3) in
+      let lcode = (List.nth lbls 4) in
+      let lcont = (List.nth lbls 5) in
+      let lequals = (List.nth lbls 6) in
+      let lsdown = (List.nth lbls 7) in
+      let shrinkstack = (List.nth lbls 8) in
+      let doneadjust = (List.nth lbls 9) in
+      let createList = (List.nth lbls 10) in
+      let addPrms2lst = (List.nth lbls 11) in
+      let createClo = (List.nth lbls 12) in
+      let copyEnv = (List.nth lbls 13) in
+      let shiftup = (List.nth lbls 14) in
+
+
+    ";;LAMBDA OPT IS HINNA
+    mov rbx, SOB_NIL_ADDRESS
+    mov rcx, " ^ (string_of_int env_size) ^ " 
+    cmp rcx, 0
+    je "^createClo^"
+  ;;create space to store the extended enviorment
+    MALLOC rbx, WORD_SIZE *" ^ (string_of_int (env_size + 1)) ^ " ; rbx = pointer to Extnv
+  
+  ;;rdx points to Env
+;;mov rdx, PVAR(-2)                                        ; Env is a pointer to lex-prevEnv (= PVAR(-2) = qword [rbp+(4+(-2))*WORD_SIZE])\n
+  mov r10,PVAR(-2) 
+
+  "^copyEnv^":
+;;mov r8, qword [rdx + WORD_SIZE * (rcx - 1)]          ; r8 = Env[i] where i = (rcx-1)
+mov r8, qword [r10 + WORD_SIZE * (rcx - 1)] 
+    mov qword [rbx + WORD_SIZE * rcx], r8                ; ExtEnv[i+1] = Env[i]
+    cmp rcx,0
+    jnz "^copyEnv^" \n
+;;loop "^copyEnv^" \n
+  
+
+
+;; mov rdx, PVAR(-1)                ; PVAR(-1) is the #arguments
+;; cmp rdx,0
+;; je "^createClo^"
+
+mov r10, PVAR(-1)                ; PVAR(-1) is the #arguments
+cmp r10,0
+je "^createClo^"
+
+  ;;create a list where we will store the params
+;; shl rdx, 3                    ; rdx = #arguments * WORD_SIZE
+;; MALLOC rdx, rdx               
+  ;;connect  the list to the extended environment
+;;  mov qword [rbx], rdx
+
+;;create a list where we will store the params
+shl r10, 3                    ; rdx = #arguments * WORD_SIZE
+MALLOC r10, r10              
+;;connect  the list to the extended environment
+mov qword [rbx], r10
+
+  
+  mov rcx, PVAR(-1)                 ; PVAR(-1) is the #arguments
+
+  ;;cmp rcx, 0
+  ;;je "^createClo^" \n" ^
+  
+    addPrms2lst^":
+    mov r8, PVAR(rcx - 1)                   ; r8 = parami on the stack where i = (rcx-1)
+;;mov [rdx + WORD_SIZE * (rcx - 1)], r8
+mov [r10 + WORD_SIZE * (rcx - 1)], r8
+    dec rcx
+    cmp rcx, 0
+    jnz "^addPrms2lst^"
+  ;;loop  "^addPrms2lst^" \n" ^
+  
+  createClo^":
+    MAKE_CLOSURE (rax, rbx,  "^lcode^" )
+    jmp "^lcont^" \n" ^
+  
+  lcode^":\n
+  
+    ;;ADJUST STACK HERE****************************************************************
+    mov r15, qword [rsp + WORD_SIZE * 2]                    
+    ;; r15 = the number of arguments on the stack sum of opt and non opt args
+    mov r14, " ^ (string_of_int (List.length str_lst)) ^ "   
+    ;; r14 = |str_lst| the number of non opt params
+    cmp r15, r14
+    ;; IF THE |OPT ARGS|=0 THEN R14=R15 --> NO NEED TO SHRINK THE STACK --> SHIFT THE SACK & CREATE EMPTY LIST
+    jne  "^shrinkstack^"\n"^ 
+
+    "sub rsp, WORD_SIZE  
+    \t ;; Create space for the params list BY shiftING THE stack\n\t\n"^
+
+    "mov rcx, 0
+    mov rbx, " ^ (string_of_int ((List.length str_lst)+3)) ^ " \n        
+    ;; RBX HOLDS THE FOLLOWING |arg| + WORD(holds #args)+ WORD(holds lex-env) + WORD(holds ret-addr)
+  \n" ^
+    "\t\n;;HERE WE SHIFT DOWN THE STACK SINCE THE MANDATORY ARGS EQUAL THE NUMBER OF ARGS ON THE STACK\t\n"^
+    ";; THE NUMBER OF OPT ARGS HERE IS 0 --> WE CREATE AN EMPTY LIST AND ADD IT TO THE STACK\t\n\n"^
+
+  lsdown^" :
+  ;;HERE WE SHIFT DOWN THE STACK IN ORDER TO CREATE SPACE FOR THE OPT LIST
+    mov r8, [rsp + WORD_SIZE * (rcx + 1)]
+    mov [rsp + WORD_SIZE * rcx], r8
+    inc rcx
+    cmp rcx, rbx
+    ;;MOVING TO THE NEXT WORD ON THE STACK --->PARAMS/ LEX / RET-ADDRESS / #ARGS
+    jne "^lsdown^
+    
+    
+    "\n\n mov qword [rsp + WORD_SIZE * rcx], SOB_NIL_ADDRESS \n  
+  ;; NOW WE add the empty list
+
+  inc r14
+  mov [rsp + WORD_SIZE * 2], r14
+  jmp "^doneadjust^"
+  
+;;SHRINK STACK -> THERE ARE OPT ARGS\n" ^
+
+  "\n\n\t ;;WE SHRINK THE STACK #OPTARGS-1 BECUASE WE TAKE THE OPT ARGS AND PUT THEM IN A LIST AND PUT THE LIST ON TOP \n\t\n"^
+  shrinkstack^":
+;; R15 --> THE NUMBER OF ARGS ON THE STACK --> OPT + NON-OPT
+;; R14 --> STR-LST THE NUMBER OF MANDATORY(NON OPT) ARGUMENTS
+  mov rbx, r15                 
+  ;; sub rbx, rdi                  ; rbx = |opt_arg|
+  sub rbx, r14     ;;Argc-|str_lst| = |str_opt|
+  mov rcx, rbx                 
+  ;; RCX NOW CONTAINS THE NUMBER OF OPT-ARGS
+
+
+  mov r9, SOB_NIL_ADDRESS       ; r9 point to an empty list\n" ^
+  ";;MAKE THE LAST CDR OF THE LIST NIL \n\t\n"^
+    createList^":
+  ;;RCX HOLDS COUNTER\t\n\n
+  ;; mov r11, rdi                  ; r11 = |arglist|
+  mov r11, r14
+    add r11, rcx                  ; r11 = |arglist| + |opt_arg|
+    mov r8, [rsp + WORD_SIZE * (2 + r11)]
+    MAKE_PAIR(rax, r8, r9)
+    mov r9, rax
+    dec rcx
+    cmp rcx, 0
+    jne "^createList^"
+  ;;loop "^createList^"
+
+    
+  ;;SHRINK THE STACK HERE
+  mov rax, 2
+  add rax, r15          
+  ;;R15 --> THE NUMBER OF ARGS ON THE STACK --> OPT + NON-OPT ---> RAX = THE NUMBER OF ARGS ON THE STACK               
+  
+  
+  mov qword [rsp + WORD_SIZE * rax], r9   
+  ;;NOW THE TOP OF THE FRAME POINTS TO THE OPT ARGS LIST
+
+  mov rcx, rax
+  dec rcx
+  mov r11, r14     
+  ;;R14 HOLDS THE #MANDATORY PARAMS --> R11 HOLDS THE #MANDATORY PARAMS 
+  add r11, 2       
+  ;;ALSO SHIFT THE RETURN ADDRESS AND LEXENV AND THE ARGS COUNT \n\t\n" ^
+  
+ shiftup^":\n\t\n
+  ;;WE SHIFT UP THE STACK IN ORDER TO REMOVE THE THE OPT ARGS FROM THE STACK AND ADD THEM AS A LIST 
+  mov r8, qword [rsp + WORD_SIZE * r11]
+  mov [rsp + WORD_SIZE * rcx], r8
+  ;;SINCE WE CANT MOVE FROM ONE MEMORY ADDRESS TO ANOTHER MEMORY ADDRESS, WE MUST USE AN AUXILARY REGISTER
+  dec rcx
+  dec r11
+  ;;DECREMENT BOTH POINTERS, WHERE WE READ FROM AND WHERE WE WRITE TO 
+  cmp r11, 0
+  jge  "^shiftup^"\n\t\n 
+
+
+
+;;RBX HOLDS THE NUMBER OF OPT ARGUMENTS
+  dec rbx
+;;RBX IS DECREMENTED CUZ WE WANT DONT WANT TO REMOVE THE LIST WE ADDED
+  shl rbx, 3
+  ;; MUL BY 8 = SHIFT 3, TO GET THE NUMBER OF BYTES IN ORDER TO ADD TO RSP POINTER
+
+  add rsp, rbx   
+;; NOW WE FIX THE STACK POINTER 
+;; NOW THE STACK CONTAINS THE OPT-ARGS AS A LIST
+  mov qword [rsp + WORD_SIZE * 2], " ^ (string_of_int ((List.length str_lst) + 1)) ^ 
+
+  "\t\n ;;NUMBER OF ARGUMENTS ON THE STACK IS UPDATED BECAUSE OF THE OPT ARG
+
+;;DONE SHRINKING STACK & ADJUST *********************************************************\n" ^
+    
+  doneadjust^":
+;;AT THIS POINT WE FINISHED ADJUSTING THE STACK ACCORDING TO THE OPT PARAMS\t\n\t\n
+    push rbp
+    mov rbp, rsp\n" ^
+    (generate_helper consts fvars expr (env_size+1)) ^ "
+    leave
+    ret\n" ^
+    lcont^":\n"
+
+      (* ";;LAMBDA OPT IS HINNA
+      mov rbx, SOB_NIL_ADDRESS
+    mov rcx, " ^ (string_of_int env_size) ^ " 
+    cmp rcx, 0
+    je "^createClo^
+    (*DIVIDE INTO TWO OPTIONS ACCORDING TO ENV_SIZE*)
+    "
+    ;;HERE WE WANT TO ALLOCATE SPACE FOR THE NEWLY EXTENDED ENVIRONMENT
+    MALLOC rbx, WORD_SIZE *" ^ (string_of_int (env_size + 1)) ^ " 
+    ;;RBX HOLDS THE ADDRESS OF THE NEWLY ALLOCATED SPACE FOR EXT-ENV
+  
+  ;;rdx points to Env
+  ;;mov rdx, PVAR(-2)                                        ; Env is a pointer to lex-prevEnv (= PVAR(-2) = qword [rbp+(4+(-2))*WORD_SIZE])\n
+  mov rdx, qword [rbp+(4+(-2))*WORD_SIZE]
+  ;;ABOVE LINE SAME AS PVAR(-2)
+
+  "^copyEnv^":
+
+    mov r8, qword [rdx + WORD_SIZE * (rcx - 1)]
+    ;;R8 HOLDS THE I'TH MAJOR ARRAY          
+    mov qword [rbx + WORD_SIZE * rcx], r8                ; ExtEnv[i+1] = Env[i]
+    ;;HERE WE SHIFT THE ENV BY ONE INDEX IN ORDER TO LEAVE THE 0-PLACE FOR THE PARAMS ADDED TO THE ENV
+    loop "^copyEnv^" \n
+  
+
+
+    mov rdx, PVAR(-1)                ; PVAR(-1) is the #arguments
+    cmp rdx,0
+    je "^createClo^"
+
+  ;;create a list where we will store the params
+    shl rdx, 3                    ; rdx = #arguments * WORD_SIZE
+    MALLOC rdx, rdx      
+
+  ;;connect  the list to the extended environment
+    mov qword [rbx], rdx
+  
+  mov rcx, PVAR(-1)                 ; PVAR(-1) is the #arguments
+  ;;rcx contains the number of params, we will iterate rcx times
+
+  ;;cmp rcx, 0
+  ;;je "^createClo^" \n" ^
+  
+    addPrms2lst^":
+    mov r8, PVAR(rcx - 1)                   
+    ;;r8 contains the current param the i'th param
+    mov [rdx + WORD_SIZE * (rcx - 1)], r8
+    dec rcx
+    ;; now we move to the i-1'th param
+    cmp rcx, 0
+    jnz "^addPrms2lst^"
+   \n" ^
+  
+  createClo^":
+    MAKE_CLOSURE (rax, rbx,  "^lcode^" )
+    jmp "^lcont^" \n
+  ;;when creating the closure we dont run the code \n" ^
+  
+  lcode^":\n
+  
+    ;;ADJUST STACK HERE****************************************************************
+    mov r15, qword [rsp + WORD_SIZE * 2]                     
+    ;; r15 = the number of arguments on the stack sum of opt and non opt args
+    mov r14, " ^ (string_of_int (List.length str_lst)) ^ "   
+    ;; r14 = |str_lst| the number of non opt params
+    cmp r15, r14
+    ;; IF THE |OPT ARGS|=0 THEN R14=R15 --> NO NEED TO SHRINK THE STACK --> SHIFT THE SACK & CREATE EMPTY LIST
+    jne  "^shrinkstack^" 
+
+    sub rsp, WORD_SIZE  
+    ;; Create space for the params list BY shiftING THE stack 
+    mov rcx, 0
+    mov rbx, " ^ (string_of_int (3+(List.length str_lst))) ^ "          
+    ; RBX HOLDS THE FOLLOWING |arg| + WORD(holds #args)+ WORD(holds lex-env) + WORD(holds ret-addr)
+  \n" ^
+    
+  lsdown^" :
+    ;;HERE WE SHIFT DOWN THE STACK IN ORDER TO CREATE SPACE FOR THE OPT LIST
+    mov r8, [rsp + WORD_SIZE * (rcx +2-1)]
+    mov [rsp + WORD_SIZE * rcx], r8
+    inc rcx
+    ;;MOVING TO THE NEXT WORD ON THE STACK --->PARAMS/ LEX / RET-ADDRESS / #ARGS
+    cmp rcx, rbx
+    jne "^lsdown^"
+
+    mov qword [rsp + WORD_SIZE * rcx], SOB_NIL_ADDRESS   
+    ;; NOW WE add the empty list
+
+  inc r14
+  mov [rsp + WORD_SIZE * 2], r14
+  ;; [rsp + WORD_SIZE * 2] --> CONTAINS THE NUMBER OF ARGS OF THE CURRENT FUNCTION'S FRAME
+  ;; HERE WE ADJUST THE NUMBER OF ARGUMENTS ON THE STACK 
+  jmp "^doneadjust^"
+  
+;;SHRINK STACK -----> THERE ARE OPT ARGS\n" ^
+    
+  shrinkstack^":
+  ;; R15 --> THE NUMBER OF ARGS ON THE STACK --> OPT + NON-OPT
+  ;; R14 --> STR-LST THE NUMBER OF MANDATORY(NON OPT) ARGUMENTS
+  mov rbx, r15 
+
+  ;;RBX CONTAINS THE                  
+  ;; sub rbx, rdi                  
+  sub rbx, r14 
+  mov rcx, rbx 
+  ;; RCX NOW CONTAINS THE NUMBER OF OPT-ARGS                
+
+
+    mov r10, SOB_NIL_ADDRESS       ; r10 point to an empty list\n
+  ;;MAKE THE LAST CDR OF THE LIST NIL 
+
+    " ^createList^":
+    ;;RCX HOLDS COUNTER
+    ;; mov r11, rdi                  ; r11 = |arglist|
+
+;;mov r11, r14        
+  ;;add r11, rcx  
+    
+    mov r11, rcx
+    add r11, r14
+    ;;r11 holds the number of args before dot (non optional) + RCX ---> 0 < RCX < #OPT
+    ;; each time we copy one of the optional args to the  opt list 
+    mov r13, [rsp + WORD_SIZE * (3 - 1 + r11)] 
+    ;;r13 points to the current list we have created so far - we start coping from end of list
+    MAKE_PAIR(rax, r13, r10)
+    mov r10, rax
+    ;;NOW R10 POINTS TO THE CURRENT MADE PAIR
+    dec rcx
+    ;;MOVE TO THE NEXT OPT-PARAM TO COPY
+    cmp rcx, 0
+    jne "^createList^"
+
+  ;;NOW r10 holds the optional arguments list
+
+  ;;SHRINK THE STACK HERE
+  mov rax, 2 ;;try change this to 3
+  add rax, r15                            
+  ;; rax HOLDS the size of our frame
+  
+  mov qword [rsp + WORD_SIZE * rax], r13   
+  ;; PUT THE LIST IN THE FRAME --> TOP OF THE FRAME
+
+
+  mov rcx, rax
+  dec rcx
+  mov r11, r14
+  ;;R14 HOLDS THE #MANDATORY PARAMS --> R11 HOLDS THE #MANDATORY PARAMS 
+  add r11, 2       ;;try change this to 3
+  ;; to shift in this loop also ret-addr and lex-env and argc\n" ^
+  
+ shiftup^":
+  ;;WE SHIFT UP THE STACK IN ORDER TO REMOVE THE THE OPT ARGS FROM THE STACK AND ADD THEM AS A LIST 
+  mov r8, qword [rsp + WORD_SIZE * r11]
+  mov [rsp + WORD_SIZE * rcx], r8
+  ;;SINCE WE CANT MOVE FROM ONE MEMORY ADDRESS TO ANOTHER MEMORY ADDRESS, WE MUST USE AN AUXILARY REGISTER
+  dec rcx
+  dec r11
+  ;;DECREMENT BOTH POINTERS, WHERE WE READ FROM AND WHERE WE WRITE TO 
+  cmp r11, 0
+  jge  "^shiftup^" 
+  
+  ;;RBX HOLDS THE NUMBER OF OPT ARGUMENTS
+  dec rbx 
+  ;;RBX IS DECREMENTED CUZ WE WANT DONT WANT TO REMOVE THE LIST WE ADDED
+  shl rbx, 3
+  ;; MUL BY 8 = SHIFT 3, TO GET THE NUMBER OF BYTES IN ORDER TO ADD TO RSP POINTER
+  add rsp, rbx   
+  ;; NOW WE FIX THE STACK POINTER 
+
+;; NOW THE STACK CONTAINS THE OPT-ARGS AS A LIST
+  mov qword [rsp + WORD_SIZE * 2], " ^ (string_of_int ((List.length str_lst) + 1)) ^ "  
+  ;;NUMBER OF ARGUMENTS ON THE STACK IS UPDATED BECAUSE OF THE OPT ARG
+;;DONE SHRINKING STACK & ADJUST *********************************************************\n" ^
+    
+  doneadjust^":
+    push rbp
+    mov rbp, rsp\n" ^
+    (generate_helper consts fvars expr (env_size+1)) ^ "
+    leave
+    ret\n" ^
+    lcont^":\n" *)
+
+
+    
+    | ScmApplicTP'(expr1, expr_lst) -> 
+      (let lbls = idx_labels ["overwrite_frame"] in
+      let overwrite = (List.nth lbls 0) in
+      let rec applicLoop lst =
+        match lst with
+        |[] -> ""
+        |hd::rest -> (generate_helper consts fvars hd env_size)^ "\npush rax\n" ^(applicLoop rest)   in
+
+      (* (List.fold_left (fun acc param -> (generate_helper consts fvars param env_size) ^ "push rax\n" ^ acc) "" expr_lst) *)
+      (applicLoop (List.rev expr_lst))
+      ^"push " ^ string_of_int (List.length expr_lst) ^ "\n" ^
+      (generate_helper consts fvars expr1 env_size) ^
+      ";;APPLICTP IS HINNAAA\n "^ 
+
+      "CLOSURE_ENV rbx, rax              ; rbx = rax -> env \n
+      push rbx \n     
+      ;; why plus one  
+      push qword [rbp + WORD_SIZE * 1] \n ;push the old ret addr as a ret address for h
    
-    (* | ScmBox' of var' *)
+      
+  
+    ;; mov r8, PVAR(-1)                   ; r8 = n (= PVAR(-1) = old args num)
+    mov r8, [rbp + 3*WORD_SIZE]  
+    ;; r8 holds the number of params of the A frame
+    add r8, 3                       
+    ;; r8 holds the size of the A frame --> number of params + the lexenv + #params pushed + return addr
+    shl r8, 3                       
+    ;;multiplied by 8 SO -->r8 now holds the number of bytes held by the A frame
+    add r8, rbp                     
+    ;;now r8 points to the last param(An-1) of the A frame
+
+    mov rbp, PVAR(-4)                ; rbp points to old rbp
+    ;;above line same as mov rbp, [rbp]
+
+    mov rcx, [rsp + WORD_SIZE * 2]   
+    ;; RCX HOLDS THE NUMBER OF ARGS IN THE B FRAME = List.length lst_str 
+    add rcx, 3                       
+    ;;rcx now holds the size of the new B frame --> M+3 -> #ARGS + LEX + RET-ADDR
     
-    (* | ScmDef' of var' * expr' *)
+    " 
+    ^overwrite ^":
     
-    (* | ScmLambdaSimple' of string list * expr' *)
-    (* | ScmLambdaOpt' of string list * string * expr' *)
+    mov r13, qword [rsp + WORD_SIZE * (rcx - 1)]
+    mov r13, qword [rsp + WORD_SIZE * (rcx +1 -2)]
+    mov [r8], qword r13
+    ;;SINCE WE CANT COPY FROM ONE MEMORY ADDRESS TO ANOTHER WE USE THE R13 REGISTER AS AN AUXILARY MEMORY STORAGE
+
+    sub r8, WORD_SIZE
+    ;;WE SUB BY WORDS_SIZE SINCE R8 IS IN BYTES
+    ;;now we move to the next cell of the stack
+    dec rcx
+    cmp rcx,0
+    jne " ^ overwrite ^ "
+  
+    add r8, WORD_SIZE               
+    ;; R8 HOLDS THE RETURN ADDRESS TO F 
+    mov rsp, r8    
+    ;;NOW WE HAVE UPDATED THE RSP -> STACK POINTER                
+
+    ;;NOW JUMP TO CODE OF CLOSURE
+    CLOSURE_CODE rax, rax            ; rax = rax -> code
+    jmp rax\n ")
+      
+      (* (let lbls = idx_labels ["overwrite_frame"] in
+      let overwrite = (List.nth lbls 0) in
+
+      List.fold_left (fun acc param -> (generate_helper consts fvars param env_size) ^ "push rax\n" ^ acc)
+
+      ("push " ^ string_of_int (List.length expr_lst) ^ "\n" ^
+      (generate_helper consts fvars expr1 env_size) ^
+      ";;APPLICTP IS HINNA\n "^ 
+
+      " CLOSURE_ENV rbx, rax             ; rbx = rax -> env
+      push rbx
+      push qword [rbp + WORD_SIZE * 1] ;push the old ret addr as a ret address for h
+      ;;FIX STACK
+      
+    ;;END OF FIX STACK
+    mov r14, PVAR(-1)                   ; r14 = n (= PVAR(-1) = old args num)
+    add r14, 3                       ; r14 = n + 3(for old args num & lex-env-g & ret-to-f) = |g-frame|
+    shl r14, 3                       ; r14 = r14 * 8
+    add r14, rbp                     ; r14 = pointer to old frame last addr param (A-n-1)
+    mov rbp, PVAR(-4)                ; fix rbp to old rbp (rbp-in-f)
+  ;;above line same as mov rbp, [rbp]
+    mov rcx, [rsp + WORD_SIZE * 2]   ; rcx = m (= new args_num = List.length params)
+    add rcx, 3                       ; rcx = m + 3(for new args num & lex-env-h & ret-to-f) = |h-frame|\n\n" ^
+  
+    overwrite ^ ":
+    mov r13, qword [rsp + WORD_SIZE * (rcx - 1)]
+    mov [r14], qword r13
+    sub r14, WORD_SIZE
+    dec rcx
+    cmp rcx,0
+    jne " ^ overwrite ^ "
+  
+    add r14, WORD_SIZE               ; r14 indicates the top element in the fixing stack (ret-to-f)
+    mov rsp, r14                     ; fix rsp
+  ;;NOW JUMP TO CODE OF CLOSURE
+       CLOSURE_CODE rax, rax            ; rax = rax -> code
+       jmp rax\n ")
+        expr_lst) *)
+   
+      (* let n = List.length expr_lst in
+    let rec applicLoop lst =
+      match lst with
+      |[] -> (generate_helper consts fvars expr1 env_size)
+      |hd::[] -> (generate_helper consts fvars hd env_size)^ "push rax\n"
+      "push "^(string_of_int n)^"\n"^ (generate_helper consts fvars expr1 env_size)
+      |hd::rest -> (generate_helper consts fvars hd env_size)^ "push rax\n" ^(applicLoop rest)  in
+
+
+    ";;APPLICTP IS HINNA\n "^(applicLoop expr_lst) ^ 
+    " CLOSURE_ENV rbx, rax             ; rbx = rax -> env
+    push rbx
+    push qword [rbp + WORD_SIZE * 1] ;push the old ret addr as a ret address for h
+    ;;FIX STACK
     
-    (* | ScmApplicTP' of expr' * (expr' list);; *)
+  ;;END OF FIX STACK
+  mov r14, PVAR(-1)                   ; r14 = n (= PVAR(-1) = old args num)
+  add r14, 3                       ; r14 = n + 3(for old args num & lex-env-g & ret-to-f) = |g-frame|
+  shl r14, 3                       ; r14 = r14 * 8
+  add r14, rbp                     ; r14 = pointer to old frame last addr param (A-n-1)
+  mov rbp, PVAR(-4)                ; fix rbp to old rbp (rbp-in-f)
+  mov rcx, [rsp + WORD_SIZE * 2]   ; rcx = m (= new args_num = List.length params)
+  add rcx, 3                       ; rcx = m + 3(for new args num & lex-env-h & ret-to-f) = |h-frame|\n\n" ^
+
+  overwrite ^ ":
+  mov r13, qword [rsp + WORD_SIZE * (rcx - 1)]
+  mov [r14], qword r13
+  sub r14, WORD_SIZE
+  loop " ^ overwrite ^ "
+
+  add r14, WORD_SIZE               ; r14 indicates the top element in the fixing stack (ret-to-f)
+  mov rsp, r14                     ; fix rsp
+;;NOW JUMP TO CODE OF CLOSURE
+     CLOSURE_CODE rax, rax            ; rax = rax -> code
+     jmp rax ") *)
+    
+    | _ -> ""    
+    
+    
+    
+    
 
 
   let make_consts_tbl asts =  
@@ -260,8 +918,10 @@ module Code_Gen : CODE_GEN = struct
     (* Additional rational numebr ops *)
     "numerator"; "denominator"; "gcd";
     (* you can add yours here *)
+    "car";"set-car!";"cdr";"set-cdr!";"cons";"apply";
     (*stdlib*)
     "fold-left"; "fold-right";"cons*"
+
   ] in
        (* ["*"; "+" ; "-" ; "/"; "<"; "=";">";
     "append";"apply";  "boolean?"; "car"; "cdr"; "char->integer"; "char?"; "cons"; "cons*"

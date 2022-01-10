@@ -139,6 +139,21 @@
     pop rbx
 %endmacro
 
+;; use in applictp
+%macro SHIFT_FRAME 1
+	push rax
+	mov rax, PARAM_COUNT
+	add rax, 4 ;;its 4 since we are not using magic
+%assign i 1
+%rep %1
+	dec rax
+	mov r15, qword [rbp - (8 * i)]
+	mov qword [rbp + (8 * rax)], r15
+%assign i i+1
+%endrep
+	pop rax
+%endmacro
+
 ;;; Creates a SOB with tag %2 
 ;;; from two pointers %3 and %4
 ;;; Stores result in register %1

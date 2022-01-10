@@ -19,30 +19,84 @@
       (map-many f args)))))
 
 
-(define fold-left 
-  (let (car car) (cdr cdr) (null? null?))
-  (letrec(lfold
-  		 (lambda (f acc lst)
-		   (if(null? lst)
-		   acc
-		   (lfold f (f acc (car lst)) (cdr lst)))))))
+; (define fold-left 
+;   (let (car car) (cdr cdr) (null? null?))
+;   (letrec(lfold
+;   		 (lambda (f acc lst)
+; 		   (if(null? lst)
+; 		   acc
+; 		   (lfold f (f acc (car lst)) (cdr lst)))))))
+
+; (define fold-right
+;   (let (car car) (cdr cdr) (null? null?))
+;   (letrec (rfold 
+;   			(lambda (f end lst)
+; 			  (if(null? lst)
+; 			  end
+; 			  (f (car lst) (rfold f end (cdr lst))))))))
+
+; (define fold-left 
+;   #;(Add your implementation here
+;      Note: The file won't compile like this, beacuase your tag-parser requires define to have a second expression.
+;      This is on purpose, so you don't compile the library without completing this implementation by mistake.)
+;     (let ((null? null?)
+;           (car car) 
+;           (cdr cdr))
+;       (letrec ((fold-left-loop 
+;                  (lambda (f acc lst) 
+;                    (if (null? lst) 
+;                        acc
+;                        (fold-left-loop f (f acc (car lst)) (cdr lst))))))
+;         fold-left-loop)))
 
 (define fold-right
-  (let (car car) (cdr cdr) (null? null?))
-  (letrec (rfold 
-  			(lambda (f end lst)
-			  (if(null? lst)
-			  end
-			  (f (car lst) (rfold f end (cdr lst))))))))
+    (let ((null? null?)
+          (car car) 
+          (cdr cdr))
+      (letrec ((fold-right-loop 
+                 (lambda (g acc lst) 
+                   (if (null? lst) 
+                       acc
+                       (g (car lst) (fold-right-loop g acc (cdr lst)))))))
+        fold-right-loop)))
 
-(define cons*
-  (let (car car) (cdr cdr) (null? null?) (cons cons))
-  (letrec (consall (lst)
-  			(if(null? lst)
-			  lst
-			  (if(null? (cdr lst))
-			  (car lst)
-			  (cons (car lst) (conall (cdr lst))))))))
+
+; (define cons*
+;   (let (car car) (cdr cdr) (null? null?) (cons cons))
+;   (letrec (consall (lst)
+;   			(if(null? lst)
+; 			  lst
+; 			  (if(null? (cdr lst))
+; 			  (car lst)
+; 			  (cons (car lst) (conall (cdr lst))))))))
+
+; (define cons*
+;     (let ((null? null?)
+;           (car car)
+;           (cdr cdr)
+;           (cons cons)
+;           (apply apply))
+;       (letrec ((cons*-loop
+;                  (lambda lst
+;                    (if (null? (cdr lst))
+;                        (car lst)
+;                        (cons (car lst) (apply cons*-loop (cdr lst)))))))
+;         cons*-loop))
+
+(define (fold-left f init seq) 
+   (if (null? seq) 
+       init 
+       (fold-left f 
+                  (f init (car seq)) 
+                  (cdr seq)))) 
+
+; (define (fold-right f init seq) 
+;    (if (null? seq) 
+;        init 
+;        (f (car seq) 
+;            (fold-right f init (cdr seq)))))
+
+
 
 (define append
   (let ((null? null?)

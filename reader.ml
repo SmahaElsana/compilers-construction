@@ -254,7 +254,8 @@
                 (make_named_char "page" '\012');
                 (make_named_char "return" '\r');
                 (make_named_char "space" ' ');
-                (make_named_char "tab" '\t')] in
+                (make_named_char "tab" '\t');
+                (make_named_char "nul" (char_of_int 0))] in
    nt1 str
 
  and nt_char_hex str = disj_list[(range_ci 'a' 'f');(range '0' '9');] str
