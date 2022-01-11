@@ -1,1 +1,1 @@
-(((lambda (x . u) (lambda (z) u)) 2 ) 3)
+(zero? 0)

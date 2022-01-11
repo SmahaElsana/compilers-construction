@@ -10,7 +10,7 @@ malloc_pointer:
 ;;; here we REServe enough Quad-words (64-bit "cells") for the free variables
 ;;; each free variable has 8 bytes reserved for a 64-bit pointer to its value
 fvar_tbl:
-    resq 29
+    resq 40
 
 section .data
 const_tbl:
@@ -18,74 +18,10 @@ MAKE_VOID
 MAKE_NIL
 MAKE_BOOL(0)
 MAKE_BOOL(1)
-MAKE_LITERAL_STRING "define"
-MAKE_LITERAL_SYMBOL(const_tbl+6)
-MAKE_LITERAL_STRING "y"
-MAKE_LITERAL_SYMBOL(const_tbl+30)
-;;49
-MAKE_LITERAL_RATIONAL(5,1)
-;;66
-MAKE_LITERAL_PAIR(const_tbl+49, const_tbl+1)
-;;83
-MAKE_LITERAL_PAIR(const_tbl+40, const_tbl+66)
-;;100
-MAKE_LITERAL_PAIR(const_tbl+21, const_tbl+83)
-MAKE_LITERAL_STRING "x"
-MAKE_LITERAL_SYMBOL(const_tbl+117)
-;;136
-MAKE_LITERAL_RATIONAL(10,1)
-;;153
-MAKE_LITERAL_PAIR(const_tbl+136, const_tbl+1)
-;;170
-MAKE_LITERAL_PAIR(const_tbl+127, const_tbl+153)
-;;187
-MAKE_LITERAL_PAIR(const_tbl+21, const_tbl+170)
-MAKE_LITERAL_STRING "set!"
-MAKE_LITERAL_SYMBOL(const_tbl+204)
-MAKE_LITERAL_STRING "if"
-MAKE_LITERAL_SYMBOL(const_tbl+226)
-MAKE_LITERAL_STRING "quote"
-MAKE_LITERAL_SYMBOL(const_tbl+246)
-;;269
+;;6
+MAKE_LITERAL_RATIONAL(0,1)
+;;23
 MAKE_LITERAL_RATIONAL(1,1)
-;;286
-MAKE_LITERAL_RATIONAL(2,1)
-;;303
-MAKE_LITERAL_RATIONAL(3,1)
-;;320
-MAKE_LITERAL_PAIR(const_tbl+303, const_tbl+1)
-;;337
-MAKE_LITERAL_PAIR(const_tbl+286, const_tbl+320)
-;;354
-MAKE_LITERAL_PAIR(const_tbl+269, const_tbl+337)
-;;371
-MAKE_LITERAL_PAIR(const_tbl+354, const_tbl+1)
-;;388
-MAKE_LITERAL_PAIR(const_tbl+260, const_tbl+371)
-;;405
-MAKE_LITERAL_PAIR(const_tbl+388, const_tbl+1)
-;;422
-MAKE_LITERAL_PAIR(const_tbl+127, const_tbl+405)
-;;439
-MAKE_LITERAL_PAIR(const_tbl+2, const_tbl+422)
-;;456
-MAKE_LITERAL_PAIR(const_tbl+237, const_tbl+439)
-;;473
-MAKE_LITERAL_PAIR(const_tbl+456, const_tbl+1)
-;;490
-MAKE_LITERAL_PAIR(const_tbl+40, const_tbl+473)
-;;507
-MAKE_LITERAL_PAIR(const_tbl+217, const_tbl+490)
-;;524
-MAKE_LITERAL_PAIR(const_tbl+40, const_tbl+1)
-;;541
-MAKE_LITERAL_PAIR(const_tbl+507, const_tbl+524)
-;;558
-MAKE_LITERAL_PAIR(const_tbl+40, const_tbl+541)
-;;575
-MAKE_LITERAL_PAIR(const_tbl+187, const_tbl+558)
-;;592
-MAKE_LITERAL_PAIR(const_tbl+100, const_tbl+575)
 
 ;;; These macro definitions are required for the primitive
 ;;; definitions in the epilogue to work properly
@@ -119,63 +55,1544 @@ main:
     ;; This is where we simulate the missing (define ...) expressions
     ;; for all the primitive procedures.
 MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, boolean?)
-mov [fvar_tbl+ 8*0], rax
+mov [fvar_tbl+ WORD_SIZE*0], rax
 MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, flonum?)
-mov [fvar_tbl+ 8*1], rax
+mov [fvar_tbl+ WORD_SIZE*1], rax
 MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, rational?)
-mov [fvar_tbl+ 8*2], rax
+mov [fvar_tbl+ WORD_SIZE*2], rax
 MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, pair?)
-mov [fvar_tbl+ 8*3], rax
+mov [fvar_tbl+ WORD_SIZE*3], rax
 MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, null?)
-mov [fvar_tbl+ 8*4], rax
+mov [fvar_tbl+ WORD_SIZE*4], rax
 MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, char?)
-mov [fvar_tbl+ 8*5], rax
+mov [fvar_tbl+ WORD_SIZE*5], rax
 MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, string?)
-mov [fvar_tbl+ 8*6], rax
+mov [fvar_tbl+ WORD_SIZE*6], rax
 MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, procedure?)
-mov [fvar_tbl+ 8*7], rax
+mov [fvar_tbl+ WORD_SIZE*7], rax
 MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, symbol?)
-mov [fvar_tbl+ 8*8], rax
+mov [fvar_tbl+ WORD_SIZE*8], rax
 MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, string_length)
-mov [fvar_tbl+ 8*9], rax
+mov [fvar_tbl+ WORD_SIZE*9], rax
 MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, string_ref)
-mov [fvar_tbl+ 8*10], rax
+mov [fvar_tbl+ WORD_SIZE*10], rax
 MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, string_set)
-mov [fvar_tbl+ 8*11], rax
+mov [fvar_tbl+ WORD_SIZE*11], rax
 MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, make_string)
-mov [fvar_tbl+ 8*12], rax
+mov [fvar_tbl+ WORD_SIZE*12], rax
 MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, symbol_to_string)
-mov [fvar_tbl+ 8*13], rax
+mov [fvar_tbl+ WORD_SIZE*13], rax
 MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, char_to_integer)
-mov [fvar_tbl+ 8*14], rax
+mov [fvar_tbl+ WORD_SIZE*14], rax
 MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, integer_to_char)
-mov [fvar_tbl+ 8*15], rax
+mov [fvar_tbl+ WORD_SIZE*15], rax
 MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, exact_to_inexact)
-mov [fvar_tbl+ 8*16], rax
+mov [fvar_tbl+ WORD_SIZE*16], rax
 MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, eq?)
-mov [fvar_tbl+ 8*17], rax
+mov [fvar_tbl+ WORD_SIZE*17], rax
 MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, add)
-mov [fvar_tbl+ 8*18], rax
+mov [fvar_tbl+ WORD_SIZE*18], rax
 MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, mul)
-mov [fvar_tbl+ 8*19], rax
+mov [fvar_tbl+ WORD_SIZE*19], rax
 MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, div)
-mov [fvar_tbl+ 8*20], rax
+mov [fvar_tbl+ WORD_SIZE*20], rax
 MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, eq)
-mov [fvar_tbl+ 8*21], rax
+mov [fvar_tbl+ WORD_SIZE*21], rax
 MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, lt)
-mov [fvar_tbl+ 8*22], rax
+mov [fvar_tbl+ WORD_SIZE*22], rax
 MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, numerator)
-mov [fvar_tbl+ 8*23], rax
+mov [fvar_tbl+ WORD_SIZE*23], rax
 MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, denominator)
-mov [fvar_tbl+ 8*24], rax
+mov [fvar_tbl+ WORD_SIZE*24], rax
 MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, gcd)
-mov [fvar_tbl+ 8*25], rax
+mov [fvar_tbl+ WORD_SIZE*25], rax
+MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, car)
+mov [fvar_tbl+ WORD_SIZE*26], rax
+MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, set_car)
+mov [fvar_tbl+ WORD_SIZE*27], rax
+MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, cdr)
+mov [fvar_tbl+ WORD_SIZE*28], rax
+MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, set_cdr)
+mov [fvar_tbl+ WORD_SIZE*29], rax
+MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, cons)
+mov [fvar_tbl+ WORD_SIZE*30], rax
+MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, apply)
+mov [fvar_tbl+ WORD_SIZE*31], rax
 
 user_code_fragment:
 ;;; The code you compiled will be added here.
 ;;; It will be executed immediately after the closures for 
 ;;; the primitive procedures are set up.
-  mov rax, const_tbl +592
+;; THE INITIAL ENVIRONMENT IS EMPTY SO THERE IS NOTHING TO COPY
+    mov rdx, SOB_NIL_ADDRESS
+    ;;NOW WE TRY TO COPY PARAMS IF EXIST
+    mov rcx,qword[rbp + 3 * WORD_SIZE] ;;rcx holds the number of params
+    cmp rcx, 0
+    je lCopyParamsEnd1 ;;---> NO PARAMS TO COPY JUMP TO END
+
+    mov rax, qword[rbp + 3 * WORD_SIZE]
+    shl rax, 3
+  ;;NOW RAX HOLDS THE NUMBER OF BYTES WE WANT TO ALLOCATE
+  ;; cmp rcx, 0
+;; je lCopyParamsEnd1
+    MALLOC rax, rax
+;;MALLOC rax, WORD_SIZE * rcx ;;rax holds the address of the newly allocated array for params in extenv
+    mov qword[rdx], rax
+
+  lCopyParams1:
+;;cmp rcx,0 
+;;je lCopyParamsEnd1
+    mov r10, PVAR(rcx - 1) 
+    mov [rax+ 8*(rcx-1)], r10
+    dec rcx
+    cmp rcx,0
+    jne lCopyParams1
+;;jmp lCopyParams1
+    
+    lCopyParamsEnd1:
+    MAKE_CLOSURE(rax, rdx, Lcode1)
+
+    jmp Lcont1
+Lcode1:
+
+    push rbp
+    mov rbp , rsp
+    ;;IF HEEEEEEERE 
+;; APPLIC IS HINAAAA 
+mov rax, PVAR(2)
+
+push rax
+
+push 1
+mov rax, qword [fvar_tbl + WORD_SIZE*4]
+
+ 
+      CLOSURE_ENV rbx, rax 
+
+      ;; RBX HOLDS THE ADDRESS OF THE ENV OF THE CLOSURE POINTED TO BY RAX REGITER 
+
+     
+      push rbx
+
+      ;; WE PUSH THE RBX SO THAT WE DONT OVERRIDE THE RBX REGISTER THAT POINTS TO THE CLOSURE ENV
+
+	
+
+      CLOSURE_CODE rdx, rax     
+      ;; RDX POINTS TO THE CODE OF THE CURRENT CLOSURE
+
+
+      call rdx 
+
+    ;; NOW WE CALLED THE BODY OF THE CLOSURE   
+	
+              
+      ;; TAKE CARE OF THE STACK --> clean the stack
+      add rsp, WORD_SIZE * 1    
+      pop rbx                  
+      shl rbx, 3               
+      add rsp, rbx 
+	
+cmp rax, SOB_FALSE_ADDRESS
+        je Lelse2
+mov rax, PVAR(1)
+jmp Lexit2
+        Lelse2:
+;; APPLIC IS HINAAAA 
+mov rax, PVAR(2)
+
+push rax
+
+push 1
+mov rax, qword [fvar_tbl + WORD_SIZE*28]
+
+ 
+      CLOSURE_ENV rbx, rax 
+
+      ;; RBX HOLDS THE ADDRESS OF THE ENV OF THE CLOSURE POINTED TO BY RAX REGITER 
+
+     
+      push rbx
+
+      ;; WE PUSH THE RBX SO THAT WE DONT OVERRIDE THE RBX REGISTER THAT POINTS TO THE CLOSURE ENV
+
+	
+
+      CLOSURE_CODE rdx, rax     
+      ;; RDX POINTS TO THE CODE OF THE CURRENT CLOSURE
+
+
+      call rdx 
+
+    ;; NOW WE CALLED THE BODY OF THE CLOSURE   
+	
+              
+      ;; TAKE CARE OF THE STACK --> clean the stack
+      add rsp, WORD_SIZE * 1    
+      pop rbx                  
+      shl rbx, 3               
+      add rsp, rbx 
+	
+
+push rax
+;; APPLIC IS HINAAAA 
+;; APPLIC IS HINAAAA 
+mov rax, PVAR(2)
+
+push rax
+
+push 1
+mov rax, qword [fvar_tbl + WORD_SIZE*26]
+
+ 
+      CLOSURE_ENV rbx, rax 
+
+      ;; RBX HOLDS THE ADDRESS OF THE ENV OF THE CLOSURE POINTED TO BY RAX REGITER 
+
+     
+      push rbx
+
+      ;; WE PUSH THE RBX SO THAT WE DONT OVERRIDE THE RBX REGISTER THAT POINTS TO THE CLOSURE ENV
+
+	
+
+      CLOSURE_CODE rdx, rax     
+      ;; RDX POINTS TO THE CODE OF THE CURRENT CLOSURE
+
+
+      call rdx 
+
+    ;; NOW WE CALLED THE BODY OF THE CLOSURE   
+	
+              
+      ;; TAKE CARE OF THE STACK --> clean the stack
+      add rsp, WORD_SIZE * 1    
+      pop rbx                  
+      shl rbx, 3               
+      add rsp, rbx 
+	
+
+push rax
+mov rax, PVAR(1)
+
+push rax
+
+push 2
+mov rax, PVAR(0)
+
+ 
+      CLOSURE_ENV rbx, rax 
+
+      ;; RBX HOLDS THE ADDRESS OF THE ENV OF THE CLOSURE POINTED TO BY RAX REGITER 
+
+     
+      push rbx
+
+      ;; WE PUSH THE RBX SO THAT WE DONT OVERRIDE THE RBX REGISTER THAT POINTS TO THE CLOSURE ENV
+
+	
+
+      CLOSURE_CODE rdx, rax     
+      ;; RDX POINTS TO THE CODE OF THE CURRENT CLOSURE
+
+
+      call rdx 
+
+    ;; NOW WE CALLED THE BODY OF THE CLOSURE   
+	
+              
+      ;; TAKE CARE OF THE STACK --> clean the stack
+      add rsp, WORD_SIZE * 1    
+      pop rbx                  
+      shl rbx, 3               
+      add rsp, rbx 
+	
+
+push rax
+mov rax, PVAR(0)
+
+push rax
+push 3
+mov rax, qword [fvar_tbl + WORD_SIZE*32]
+;;APPLICTP IS HINNAAA
+ CLOSURE_ENV rbx, rax              ; rbx = rax -> env 
+
+      push rbx 
+     
+      ;; why plus one  
+      push qword [rbp + WORD_SIZE * 1] 
+ ;push the old ret addr as a ret address for h
+   
+      
+  
+    ;; mov r8, PVAR(-1)                   ; r8 = n (= PVAR(-1) = old args num)
+    mov r8, [rbp + 3*WORD_SIZE]  
+    ;; r8 holds the number of params of the A frame
+    add r8, 3                       
+    ;; r8 holds the size of the A frame --> number of params + the lexenv + #params pushed + return addr
+    shl r8, 3                       
+    ;;multiplied by 8 SO -->r8 now holds the number of bytes held by the A frame
+    add r8, rbp                     
+    ;;now r8 points to the last param(An-1) of the A frame
+
+    mov rbp, PVAR(-4)                ; rbp points to old rbp
+    ;;above line same as mov rbp, [rbp]
+
+    mov rcx, [rsp + WORD_SIZE * 2]   
+    ;; RCX HOLDS THE NUMBER OF ARGS IN THE B FRAME = List.length lst_str 
+    add rcx, 3                       
+    ;;rcx now holds the size of the new B frame --> M+3 -> #ARGS + LEX + RET-ADDR
+    
+    overwrite_frame3:
+    
+    mov r13, qword [rsp + WORD_SIZE * (rcx - 1)]
+    mov r13, qword [rsp + WORD_SIZE * (rcx +1 -2)]
+    mov [r8], qword r13
+    ;;SINCE WE CANT COPY FROM ONE MEMORY ADDRESS TO ANOTHER WE USE THE R13 REGISTER AS AN AUXILARY MEMORY STORAGE
+
+    sub r8, WORD_SIZE
+    ;;WE SUB BY WORDS_SIZE SINCE R8 IS IN BYTES
+    ;;now we move to the next cell of the stack
+    dec rcx
+    cmp rcx,0
+    jne overwrite_frame3
+  
+    add r8, WORD_SIZE               
+    ;; R8 HOLDS THE RETURN ADDRESS TO F 
+    mov rsp, r8    
+    ;;NOW WE HAVE UPDATED THE RSP -> STACK POINTER                
+
+    ;;NOW JUMP TO CODE OF CLOSURE
+    CLOSURE_CODE rax, rax            ; rax = rax -> code
+    jmp rax
+ 
+Lexit2:
+
+    leave
+    ret
+  Lcont1:
+mov qword[fvar_tbl + WORD_SIZE*32] , rax
+    mov rax,SOB_VOID_ADDRESS
+
+	call write_sob_if_not_void
+
+;; THE INITIAL ENVIRONMENT IS EMPTY SO THERE IS NOTHING TO COPY
+    mov rdx, SOB_NIL_ADDRESS
+    ;;NOW WE TRY TO COPY PARAMS IF EXIST
+    mov rcx,qword[rbp + 3 * WORD_SIZE] ;;rcx holds the number of params
+    cmp rcx, 0
+    je lCopyParamsEnd4 ;;---> NO PARAMS TO COPY JUMP TO END
+
+    mov rax, qword[rbp + 3 * WORD_SIZE]
+    shl rax, 3
+  ;;NOW RAX HOLDS THE NUMBER OF BYTES WE WANT TO ALLOCATE
+  ;; cmp rcx, 0
+;; je lCopyParamsEnd4
+    MALLOC rax, rax
+;;MALLOC rax, WORD_SIZE * rcx ;;rax holds the address of the newly allocated array for params in extenv
+    mov qword[rdx], rax
+
+  lCopyParams4:
+;;cmp rcx,0 
+;;je lCopyParamsEnd4
+    mov r10, PVAR(rcx - 1) 
+    mov [rax+ 8*(rcx-1)], r10
+    dec rcx
+    cmp rcx,0
+    jne lCopyParams4
+;;jmp lCopyParams4
+    
+    lCopyParamsEnd4:
+    MAKE_CLOSURE(rax, rdx, Lcode4)
+
+    jmp Lcont4
+Lcode4:
+
+    push rbp
+    mov rbp , rsp
+    ;;IF HEEEEEEERE 
+;; APPLIC IS HINAAAA 
+mov rax, PVAR(2)
+
+push rax
+
+push 1
+mov rax, qword [fvar_tbl + WORD_SIZE*4]
+
+ 
+      CLOSURE_ENV rbx, rax 
+
+      ;; RBX HOLDS THE ADDRESS OF THE ENV OF THE CLOSURE POINTED TO BY RAX REGITER 
+
+     
+      push rbx
+
+      ;; WE PUSH THE RBX SO THAT WE DONT OVERRIDE THE RBX REGISTER THAT POINTS TO THE CLOSURE ENV
+
+	
+
+      CLOSURE_CODE rdx, rax     
+      ;; RDX POINTS TO THE CODE OF THE CURRENT CLOSURE
+
+
+      call rdx 
+
+    ;; NOW WE CALLED THE BODY OF THE CLOSURE   
+	
+              
+      ;; TAKE CARE OF THE STACK --> clean the stack
+      add rsp, WORD_SIZE * 1    
+      pop rbx                  
+      shl rbx, 3               
+      add rsp, rbx 
+	
+cmp rax, SOB_FALSE_ADDRESS
+        je Lelse5
+mov rax, PVAR(1)
+jmp Lexit5
+        Lelse5:
+;; APPLIC IS HINAAAA 
+;; APPLIC IS HINAAAA 
+mov rax, PVAR(2)
+
+push rax
+
+push 1
+mov rax, qword [fvar_tbl + WORD_SIZE*28]
+
+ 
+      CLOSURE_ENV rbx, rax 
+
+      ;; RBX HOLDS THE ADDRESS OF THE ENV OF THE CLOSURE POINTED TO BY RAX REGITER 
+
+     
+      push rbx
+
+      ;; WE PUSH THE RBX SO THAT WE DONT OVERRIDE THE RBX REGISTER THAT POINTS TO THE CLOSURE ENV
+
+	
+
+      CLOSURE_CODE rdx, rax     
+      ;; RDX POINTS TO THE CODE OF THE CURRENT CLOSURE
+
+
+      call rdx 
+
+    ;; NOW WE CALLED THE BODY OF THE CLOSURE   
+	
+              
+      ;; TAKE CARE OF THE STACK --> clean the stack
+      add rsp, WORD_SIZE * 1    
+      pop rbx                  
+      shl rbx, 3               
+      add rsp, rbx 
+	
+
+push rax
+mov rax, PVAR(1)
+
+push rax
+mov rax, PVAR(0)
+
+push rax
+
+push 3
+mov rax, qword [fvar_tbl + WORD_SIZE*33]
+
+ 
+      CLOSURE_ENV rbx, rax 
+
+      ;; RBX HOLDS THE ADDRESS OF THE ENV OF THE CLOSURE POINTED TO BY RAX REGITER 
+
+     
+      push rbx
+
+      ;; WE PUSH THE RBX SO THAT WE DONT OVERRIDE THE RBX REGISTER THAT POINTS TO THE CLOSURE ENV
+
+	
+
+      CLOSURE_CODE rdx, rax     
+      ;; RDX POINTS TO THE CODE OF THE CURRENT CLOSURE
+
+
+      call rdx 
+
+    ;; NOW WE CALLED THE BODY OF THE CLOSURE   
+	
+              
+      ;; TAKE CARE OF THE STACK --> clean the stack
+      add rsp, WORD_SIZE * 1    
+      pop rbx                  
+      shl rbx, 3               
+      add rsp, rbx 
+	
+
+push rax
+;; APPLIC IS HINAAAA 
+mov rax, PVAR(2)
+
+push rax
+
+push 1
+mov rax, qword [fvar_tbl + WORD_SIZE*26]
+
+ 
+      CLOSURE_ENV rbx, rax 
+
+      ;; RBX HOLDS THE ADDRESS OF THE ENV OF THE CLOSURE POINTED TO BY RAX REGITER 
+
+     
+      push rbx
+
+      ;; WE PUSH THE RBX SO THAT WE DONT OVERRIDE THE RBX REGISTER THAT POINTS TO THE CLOSURE ENV
+
+	
+
+      CLOSURE_CODE rdx, rax     
+      ;; RDX POINTS TO THE CODE OF THE CURRENT CLOSURE
+
+
+      call rdx 
+
+    ;; NOW WE CALLED THE BODY OF THE CLOSURE   
+	
+              
+      ;; TAKE CARE OF THE STACK --> clean the stack
+      add rsp, WORD_SIZE * 1    
+      pop rbx                  
+      shl rbx, 3               
+      add rsp, rbx 
+	
+
+push rax
+push 2
+mov rax, PVAR(0)
+;;APPLICTP IS HINNAAA
+ CLOSURE_ENV rbx, rax              ; rbx = rax -> env 
+
+      push rbx 
+     
+      ;; why plus one  
+      push qword [rbp + WORD_SIZE * 1] 
+ ;push the old ret addr as a ret address for h
+   
+      
+  
+    ;; mov r8, PVAR(-1)                   ; r8 = n (= PVAR(-1) = old args num)
+    mov r8, [rbp + 3*WORD_SIZE]  
+    ;; r8 holds the number of params of the A frame
+    add r8, 3                       
+    ;; r8 holds the size of the A frame --> number of params + the lexenv + #params pushed + return addr
+    shl r8, 3                       
+    ;;multiplied by 8 SO -->r8 now holds the number of bytes held by the A frame
+    add r8, rbp                     
+    ;;now r8 points to the last param(An-1) of the A frame
+
+    mov rbp, PVAR(-4)                ; rbp points to old rbp
+    ;;above line same as mov rbp, [rbp]
+
+    mov rcx, [rsp + WORD_SIZE * 2]   
+    ;; RCX HOLDS THE NUMBER OF ARGS IN THE B FRAME = List.length lst_str 
+    add rcx, 3                       
+    ;;rcx now holds the size of the new B frame --> M+3 -> #ARGS + LEX + RET-ADDR
+    
+    overwrite_frame6:
+    
+    mov r13, qword [rsp + WORD_SIZE * (rcx - 1)]
+    mov r13, qword [rsp + WORD_SIZE * (rcx +1 -2)]
+    mov [r8], qword r13
+    ;;SINCE WE CANT COPY FROM ONE MEMORY ADDRESS TO ANOTHER WE USE THE R13 REGISTER AS AN AUXILARY MEMORY STORAGE
+
+    sub r8, WORD_SIZE
+    ;;WE SUB BY WORDS_SIZE SINCE R8 IS IN BYTES
+    ;;now we move to the next cell of the stack
+    dec rcx
+    cmp rcx,0
+    jne overwrite_frame6
+  
+    add r8, WORD_SIZE               
+    ;; R8 HOLDS THE RETURN ADDRESS TO F 
+    mov rsp, r8    
+    ;;NOW WE HAVE UPDATED THE RSP -> STACK POINTER                
+
+    ;;NOW JUMP TO CODE OF CLOSURE
+    CLOSURE_CODE rax, rax            ; rax = rax -> code
+    jmp rax
+ 
+Lexit5:
+
+    leave
+    ret
+  Lcont4:
+mov qword[fvar_tbl + WORD_SIZE*33] , rax
+    mov rax,SOB_VOID_ADDRESS
+
+	call write_sob_if_not_void
+
+;;LAMBDA OPT IS HINNA
+        mov rdx, SOB_NIL_ADDRESS
+        mov rcx, 0 
+        cmp rcx, 0
+
+
+createClosure7:
+
+
+    
+      MAKE_CLOSURE (rax, rdx,  Lcode7 )
+        jmp Lcont7 
+Lcode7:
+
+      
+        ;;ADJUST STACK HERE****************************************************************
+        mov r15, qword [rsp + WORD_SIZE * 2]                    
+        ;; r15 = the number of arguments on the stack sum of opt and non opt args
+        mov r14, 0   
+        ;; r14 = |str_lst| the number of non opt params
+        cmp r15, r14
+        ;; IF THE |OPT ARGS|=0 THEN R14=R15 --> NO NEED TO SHRINK THE STACK --> SHIFT THE SACK & CREATE EMPTY LIST
+        jne  shrinkstack7
+sub rsp, WORD_SIZE  
+        	 ;; Create space for the params list BY shiftING THE stack
+	
+mov rcx, 0  
+      mov rdx, 3 
+      
+        ;; RDX HOLDS THE FOLLOWING |arg| + WORD(holds #args)+ WORD(holds lex-env) + WORD(holds ret-addr)
+      
+	
+;;HERE WE SHIFT DOWN THE STACK SINCE THE MANDATORY ARGS EQUAL THE NUMBER OF ARGS ON THE STACK	
+;; THE NUMBER OF OPT ARGS HERE IS 0 --> WE CREATE AN EMPTY LIST AND ADD IT TO THE STACK	
+
+shiftdown7 :
+      ;;HERE WE SHIFT DOWN THE STACK IN ORDER TO CREATE SPACE FOR THE OPT LIST
+        mov r8, [rsp + WORD_SIZE * (rcx + 1)]
+        mov [rsp + WORD_SIZE * rcx], r8
+        inc rcx
+    
+    cmp rcx, rdx
+        ;;MOVING TO THE NEXT WORD ON THE STACK --->PARAMS/ LEX / RET-ADDRESS / #ARGS
+        jne shiftdown7
+
+ mov qword [rsp + WORD_SIZE * rcx], SOB_NIL_ADDRESS 
+  
+      ;; NOW WE add the empty list
+    
+      inc r14
+      mov [rsp + WORD_SIZE * 2], r14
+      jmp doneadjust7
+      
+    ;;SHRINK STACK -> THERE ARE OPT ARGS
+
+
+	 ;;WE SHRINK THE STACK #OPTARGS-1 BECUASE WE TAKE THE OPT ARGS AND PUT THEM IN A LIST AND PUT THE LIST ON TOP 
+	
+shrinkstack7:
+    ;; R15 --> THE NUMBER OF ARGS ON THE STACK --> OPT + NON-OPT
+    ;; R14 --> STR-LST THE NUMBER OF MANDATORY(NON OPT) ARGUMENTS
+      
+    mov rdx, r15 
+                
+    sub rdx, r14 
+
+    mov rcx, rdx  
+	
+               
+      ;; RCX NOW CONTAINS THE NUMBER OF OPT-ARGS
+    
+    
+      mov r9, SOB_NIL_ADDRESS       
+    ;; r9 point to an empty list
+;;MAKE THE LAST CDR OF THE LIST NIL 
+	
+createList7:
+      ;;RCX HOLDS COUNTER	
+
+
+      mov r11, r14
+        add r11, rcx                  
+        mov r8, [rsp + WORD_SIZE * (2 + r11)]
+        MAKE_PAIR(rax, r8, r9)
+      ;;AT THIS POINT RAX HOLDS A POINTER TO THE CREATED PAIR
+        mov r9, rax
+      ;;WE MOVE RAX TO R9 IN ORDER TO CONTINUE RECURSIVLY
+        dec rcx
+        cmp rcx, 0
+        jne createList7
+      
+    
+        
+      ;;SHRINK THE STACK HERE
+      mov rax, 2
+      add rax, r15          
+      ;;R15 --> THE NUMBER OF ARGS ON THE STACK --> OPT + NON-OPT ---> RAX = THE NUMBER OF ARGS ON THE STACK               
+      
+      
+      mov qword [rsp + WORD_SIZE * rax], r9   
+      ;;NOW THE TOP OF THE FRAME POINTS TO THE OPT ARGS LIST
+    
+      mov rcx, rax
+      dec rcx
+      mov r11, r14     
+      ;;R14 HOLDS THE #MANDATORY PARAMS --> R11 HOLDS THE #MANDATORY PARAMS 
+      add r11, 2       
+      ;;ALSO SHIFT THE RETURN ADDRESS AND LEXENV AND THE ARGS COUNT 
+	
+shiftup7:
+	
+
+      ;;WE SHIFT UP THE STACK IN ORDER TO REMOVE THE THE OPT ARGS FROM THE STACK AND ADD THEM AS A LIST 
+      mov r8, qword [rsp + WORD_SIZE * r11]
+      mov [rsp + WORD_SIZE * rcx], r8
+      ;;SINCE WE CANT MOVE FROM ONE MEMORY ADDRESS TO ANOTHER MEMORY ADDRESS, WE MUST USE AN AUXILARY REGISTER
+      dec rcx
+      dec r11
+      ;;DECREMENT BOTH POINTERS, WHERE WE READ FROM AND WHERE WE WRITE TO 
+      cmp r11, 0
+      jge  shiftup7
+	
+ 
+    
+    
+    
+    ;;RDX HOLDS THE NUMBER OF OPT ARGUMENTS
+    dec rdx
+    ;;RDX IS DECREMENTED CUZ WE WANT DONT WANT TO REMOVE THE LIST WE ADDED
+    shl rdx, 3
+      ;; MUL BY 8 = SHIFT 3, TO GET THE NUMBER OF BYTES IN ORDER TO ADD TO RSP POINTER
+    
+    
+      add rsp, rdx   
+    ;; NOW WE FIX THE STACK POINTER 
+    ;; NOW THE STACK CONTAINS THE OPT-ARGS AS A LIST
+      mov qword [rsp + WORD_SIZE * 2], 1	
+ ;;NUMBER OF ARGUMENTS ON THE STACK IS UPDATED BECAUSE OF THE OPT ARG
+    
+    ;;DONE SHRINKING STACK & ADJUST *********************************************************
+doneadjust7:
+
+    ;;AT THIS POINT WE FINISHED ADJUSTING THE STACK ACCORDING TO THE OPT PARAMS	
+	
+
+        push rbp
+
+        mov rbp, rsp
+mov rax, PVAR(0)
+
+
+        leave
+
+        ret
+Lcont7:
+	
+mov qword[fvar_tbl + WORD_SIZE*35] , rax
+    mov rax,SOB_VOID_ADDRESS
+
+	call write_sob_if_not_void
+
+;; THE INITIAL ENVIRONMENT IS EMPTY SO THERE IS NOTHING TO COPY
+    mov rdx, SOB_NIL_ADDRESS
+    ;;NOW WE TRY TO COPY PARAMS IF EXIST
+    mov rcx,qword[rbp + 3 * WORD_SIZE] ;;rcx holds the number of params
+    cmp rcx, 0
+    je lCopyParamsEnd8 ;;---> NO PARAMS TO COPY JUMP TO END
+
+    mov rax, qword[rbp + 3 * WORD_SIZE]
+    shl rax, 3
+  ;;NOW RAX HOLDS THE NUMBER OF BYTES WE WANT TO ALLOCATE
+  ;; cmp rcx, 0
+;; je lCopyParamsEnd8
+    MALLOC rax, rax
+;;MALLOC rax, WORD_SIZE * rcx ;;rax holds the address of the newly allocated array for params in extenv
+    mov qword[rdx], rax
+
+  lCopyParams8:
+;;cmp rcx,0 
+;;je lCopyParamsEnd8
+    mov r10, PVAR(rcx - 1) 
+    mov [rax+ 8*(rcx-1)], r10
+    dec rcx
+    cmp rcx,0
+    jne lCopyParams8
+;;jmp lCopyParams8
+    
+    lCopyParamsEnd8:
+    MAKE_CLOSURE(rax, rdx, Lcode8)
+
+    jmp Lcont8
+Lcode8:
+
+    push rbp
+    mov rbp , rsp
+    ;;IF HEEEEEEERE 
+mov rax, PVAR(0)
+cmp rax, SOB_FALSE_ADDRESS
+        je Lelse9
+  mov rax, const_tbl +2
+jmp Lexit9
+        Lelse9:
+  mov rax, const_tbl +4
+
+Lexit9:
+
+    leave
+    ret
+  Lcont8:
+mov qword[fvar_tbl + WORD_SIZE*36] , rax
+    mov rax,SOB_VOID_ADDRESS
+
+	call write_sob_if_not_void
+
+;; APPLIC IS HINAAAA 
+mov rax, qword [fvar_tbl + WORD_SIZE*21]
+
+push rax
+
+push 1
+;; THE INITIAL ENVIRONMENT IS EMPTY SO THERE IS NOTHING TO COPY
+    mov rdx, SOB_NIL_ADDRESS
+    ;;NOW WE TRY TO COPY PARAMS IF EXIST
+    mov rcx,qword[rbp + 3 * WORD_SIZE] ;;rcx holds the number of params
+    cmp rcx, 0
+    je lCopyParamsEnd10 ;;---> NO PARAMS TO COPY JUMP TO END
+
+    mov rax, qword[rbp + 3 * WORD_SIZE]
+    shl rax, 3
+  ;;NOW RAX HOLDS THE NUMBER OF BYTES WE WANT TO ALLOCATE
+  ;; cmp rcx, 0
+;; je lCopyParamsEnd10
+    MALLOC rax, rax
+;;MALLOC rax, WORD_SIZE * rcx ;;rax holds the address of the newly allocated array for params in extenv
+    mov qword[rdx], rax
+
+  lCopyParams10:
+;;cmp rcx,0 
+;;je lCopyParamsEnd10
+    mov r10, PVAR(rcx - 1) 
+    mov [rax+ 8*(rcx-1)], r10
+    dec rcx
+    cmp rcx,0
+    jne lCopyParams10
+;;jmp lCopyParams10
+    
+    lCopyParamsEnd10:
+    MAKE_CLOSURE(rax, rdx, Lcode10)
+
+    jmp Lcont10
+Lcode10:
+
+    push rbp
+    mov rbp , rsp
+    ;;LAMBDA IS HIIINA
+
+  ;;mov rdx, SOB_NIL_ADDRESS
+;; mov rcx,1
+;;cmp rcx , 0
+;;je lambdaEnvEnd11
+
+      mov rcx,1
+      MALLOC rdx , WORD_SIZE * 2 ;;rdx points to extended env
+      mov rbx, qword[rbp + WORD_SIZE*2] ;;point to lex env
+    lambdaEnv11:
+;;cmp rcx, 0
+;; je lambdaEnvEnd11
+      mov r10, qword[rbx + WORD_SIZE*(rcx-1)]
+      mov qword[rdx + WORD_SIZE*rcx], r10
+      dec rcx
+      cmp rcx, 0
+      jne lambdaEnv11 
+;; jmp lambdaEnv11 
+    lambdaEnvEnd11:
+
+    ;;NOW WE TRY TO COPY PARAMS IF EXIST
+      mov rcx,qword[rbp + 3 * WORD_SIZE] ;;rcx holds the number of params
+      cmp rcx, 0
+      je lCopyParamsEnd11 
+
+      mov rax, qword[rbp + 3 * WORD_SIZE]
+      shl rax, 3
+  ;;  cmp rcx, 0
+;;  je lCopyParamsEnd11
+      MALLOC rax, rax
+  ;;MALLOC rax, WORD_SIZE * rcx ;;rax holds the address of the newly allocated array for params in extenv
+      mov qword[rdx], rax
+
+    lCopyParams11:
+;;cmp rcx,0 
+;;je lCopyParamsEnd11
+      mov r10, PVAR(rcx - 1) 
+      mov [rax+ 8*(rcx-1)], r10
+      dec rcx
+      cmp rcx,0
+      jne lCopyParams11
+;;jmp lCopyParams11
+      
+      lCopyParamsEnd11:
+      MAKE_CLOSURE(rax, rdx, Lcode11)
+
+      jmp Lcont11
+Lcode11:
+
+      push rbp
+      mov rbp , rsp
+        mov rax, const_tbl +6
+
+push rax
+mov rax, PVAR(0)
+
+push rax
+push 2
+
+    mov rax ,qword[rbp + WORD_SIZE*2]
+    mov rax ,qword[rax + WORD_SIZE*0]
+    mov rax, qword[rax + WORD_SIZE*0]
+;;APPLICTP IS HINNAAA
+ CLOSURE_ENV rbx, rax              ; rbx = rax -> env 
+
+      push rbx 
+     
+      ;; why plus one  
+      push qword [rbp + WORD_SIZE * 1] 
+ ;push the old ret addr as a ret address for h
+   
+      
+  
+    ;; mov r8, PVAR(-1)                   ; r8 = n (= PVAR(-1) = old args num)
+    mov r8, [rbp + 3*WORD_SIZE]  
+    ;; r8 holds the number of params of the A frame
+    add r8, 3                       
+    ;; r8 holds the size of the A frame --> number of params + the lexenv + #params pushed + return addr
+    shl r8, 3                       
+    ;;multiplied by 8 SO -->r8 now holds the number of bytes held by the A frame
+    add r8, rbp                     
+    ;;now r8 points to the last param(An-1) of the A frame
+
+    mov rbp, PVAR(-4)                ; rbp points to old rbp
+    ;;above line same as mov rbp, [rbp]
+
+    mov rcx, [rsp + WORD_SIZE * 2]   
+    ;; RCX HOLDS THE NUMBER OF ARGS IN THE B FRAME = List.length lst_str 
+    add rcx, 3                       
+    ;;rcx now holds the size of the new B frame --> M+3 -> #ARGS + LEX + RET-ADDR
+    
+    overwrite_frame12:
+    
+    mov r13, qword [rsp + WORD_SIZE * (rcx - 1)]
+    mov r13, qword [rsp + WORD_SIZE * (rcx +1 -2)]
+    mov [r8], qword r13
+    ;;SINCE WE CANT COPY FROM ONE MEMORY ADDRESS TO ANOTHER WE USE THE R13 REGISTER AS AN AUXILARY MEMORY STORAGE
+
+    sub r8, WORD_SIZE
+    ;;WE SUB BY WORDS_SIZE SINCE R8 IS IN BYTES
+    ;;now we move to the next cell of the stack
+    dec rcx
+    cmp rcx,0
+    jne overwrite_frame12
+  
+    add r8, WORD_SIZE               
+    ;; R8 HOLDS THE RETURN ADDRESS TO F 
+    mov rsp, r8    
+    ;;NOW WE HAVE UPDATED THE RSP -> STACK POINTER                
+
+    ;;NOW JUMP TO CODE OF CLOSURE
+    CLOSURE_CODE rax, rax            ; rax = rax -> code
+    jmp rax
+ 
+      leave
+      ret
+    Lcont11:
+
+    leave
+    ret
+  Lcont10:
+
+ 
+      CLOSURE_ENV rbx, rax 
+
+      ;; RBX HOLDS THE ADDRESS OF THE ENV OF THE CLOSURE POINTED TO BY RAX REGITER 
+
+     
+      push rbx
+
+      ;; WE PUSH THE RBX SO THAT WE DONT OVERRIDE THE RBX REGISTER THAT POINTS TO THE CLOSURE ENV
+
+	
+
+      CLOSURE_CODE rdx, rax     
+      ;; RDX POINTS TO THE CODE OF THE CURRENT CLOSURE
+
+
+      call rdx 
+
+    ;; NOW WE CALLED THE BODY OF THE CLOSURE   
+	
+              
+      ;; TAKE CARE OF THE STACK --> clean the stack
+      add rsp, WORD_SIZE * 1    
+      pop rbx                  
+      shl rbx, 3               
+      add rsp, rbx 
+	
+mov qword[fvar_tbl + WORD_SIZE*37] , rax
+    mov rax,SOB_VOID_ADDRESS
+
+	call write_sob_if_not_void
+
+;; APPLIC IS HINAAAA 
+mov rax, qword [fvar_tbl + WORD_SIZE*24]
+
+push rax
+mov rax, qword [fvar_tbl + WORD_SIZE*21]
+
+push rax
+mov rax, qword [fvar_tbl + WORD_SIZE*2]
+
+push rax
+
+push 3
+;; THE INITIAL ENVIRONMENT IS EMPTY SO THERE IS NOTHING TO COPY
+    mov rdx, SOB_NIL_ADDRESS
+    ;;NOW WE TRY TO COPY PARAMS IF EXIST
+    mov rcx,qword[rbp + 3 * WORD_SIZE] ;;rcx holds the number of params
+    cmp rcx, 0
+    je lCopyParamsEnd13 ;;---> NO PARAMS TO COPY JUMP TO END
+
+    mov rax, qword[rbp + 3 * WORD_SIZE]
+    shl rax, 3
+  ;;NOW RAX HOLDS THE NUMBER OF BYTES WE WANT TO ALLOCATE
+  ;; cmp rcx, 0
+;; je lCopyParamsEnd13
+    MALLOC rax, rax
+;;MALLOC rax, WORD_SIZE * rcx ;;rax holds the address of the newly allocated array for params in extenv
+    mov qword[rdx], rax
+
+  lCopyParams13:
+;;cmp rcx,0 
+;;je lCopyParamsEnd13
+    mov r10, PVAR(rcx - 1) 
+    mov [rax+ 8*(rcx-1)], r10
+    dec rcx
+    cmp rcx,0
+    jne lCopyParams13
+;;jmp lCopyParams13
+    
+    lCopyParamsEnd13:
+    MAKE_CLOSURE(rax, rdx, Lcode13)
+
+    jmp Lcont13
+Lcode13:
+
+    push rbp
+    mov rbp , rsp
+    ;;LAMBDA IS HIIINA
+
+  ;;mov rdx, SOB_NIL_ADDRESS
+;; mov rcx,1
+;;cmp rcx , 0
+;;je lambdaEnvEnd14
+
+      mov rcx,1
+      MALLOC rdx , WORD_SIZE * 2 ;;rdx points to extended env
+      mov rbx, qword[rbp + WORD_SIZE*2] ;;point to lex env
+    lambdaEnv14:
+;;cmp rcx, 0
+;; je lambdaEnvEnd14
+      mov r10, qword[rbx + WORD_SIZE*(rcx-1)]
+      mov qword[rdx + WORD_SIZE*rcx], r10
+      dec rcx
+      cmp rcx, 0
+      jne lambdaEnv14 
+;; jmp lambdaEnv14 
+    lambdaEnvEnd14:
+
+    ;;NOW WE TRY TO COPY PARAMS IF EXIST
+      mov rcx,qword[rbp + 3 * WORD_SIZE] ;;rcx holds the number of params
+      cmp rcx, 0
+      je lCopyParamsEnd14 
+
+      mov rax, qword[rbp + 3 * WORD_SIZE]
+      shl rax, 3
+  ;;  cmp rcx, 0
+;;  je lCopyParamsEnd14
+      MALLOC rax, rax
+  ;;MALLOC rax, WORD_SIZE * rcx ;;rax holds the address of the newly allocated array for params in extenv
+      mov qword[rdx], rax
+
+    lCopyParams14:
+;;cmp rcx,0 
+;;je lCopyParamsEnd14
+      mov r10, PVAR(rcx - 1) 
+      mov [rax+ 8*(rcx-1)], r10
+      dec rcx
+      cmp rcx,0
+      jne lCopyParams14
+;;jmp lCopyParams14
+      
+      lCopyParamsEnd14:
+      MAKE_CLOSURE(rax, rdx, Lcode14)
+
+      jmp Lcont14
+Lcode14:
+
+      push rbp
+      mov rbp , rsp
+      ;;IF HEEEEEEERE 
+;; APPLIC IS HINAAAA 
+mov rax, PVAR(0)
+
+push rax
+
+push 1
+
+    mov rax ,qword[rbp + WORD_SIZE*2]
+    mov rax ,qword[rax + WORD_SIZE*0]
+    mov rax, qword[rax + WORD_SIZE*0]
+
+ 
+      CLOSURE_ENV rbx, rax 
+
+      ;; RBX HOLDS THE ADDRESS OF THE ENV OF THE CLOSURE POINTED TO BY RAX REGITER 
+
+     
+      push rbx
+
+      ;; WE PUSH THE RBX SO THAT WE DONT OVERRIDE THE RBX REGISTER THAT POINTS TO THE CLOSURE ENV
+
+	
+
+      CLOSURE_CODE rdx, rax     
+      ;; RDX POINTS TO THE CODE OF THE CURRENT CLOSURE
+
+
+      call rdx 
+
+    ;; NOW WE CALLED THE BODY OF THE CLOSURE   
+	
+              
+      ;; TAKE CARE OF THE STACK --> clean the stack
+      add rsp, WORD_SIZE * 1    
+      pop rbx                  
+      shl rbx, 3               
+      add rsp, rbx 
+	
+cmp rax, SOB_FALSE_ADDRESS
+        je Lelse15
+  mov rax, const_tbl +23
+
+push rax
+;; APPLIC IS HINAAAA 
+mov rax, PVAR(0)
+
+push rax
+
+push 1
+
+    mov rax ,qword[rbp + WORD_SIZE*2]
+    mov rax ,qword[rax + WORD_SIZE*0]
+    mov rax, qword[rax + WORD_SIZE*2]
+
+ 
+      CLOSURE_ENV rbx, rax 
+
+      ;; RBX HOLDS THE ADDRESS OF THE ENV OF THE CLOSURE POINTED TO BY RAX REGITER 
+
+     
+      push rbx
+
+      ;; WE PUSH THE RBX SO THAT WE DONT OVERRIDE THE RBX REGISTER THAT POINTS TO THE CLOSURE ENV
+
+	
+
+      CLOSURE_CODE rdx, rax     
+      ;; RDX POINTS TO THE CODE OF THE CURRENT CLOSURE
+
+
+      call rdx 
+
+    ;; NOW WE CALLED THE BODY OF THE CLOSURE   
+	
+              
+      ;; TAKE CARE OF THE STACK --> clean the stack
+      add rsp, WORD_SIZE * 1    
+      pop rbx                  
+      shl rbx, 3               
+      add rsp, rbx 
+	
+
+push rax
+push 2
+
+    mov rax ,qword[rbp + WORD_SIZE*2]
+    mov rax ,qword[rax + WORD_SIZE*0]
+    mov rax, qword[rax + WORD_SIZE*1]
+;;APPLICTP IS HINNAAA
+ CLOSURE_ENV rbx, rax              ; rbx = rax -> env 
+
+      push rbx 
+     
+      ;; why plus one  
+      push qword [rbp + WORD_SIZE * 1] 
+ ;push the old ret addr as a ret address for h
+   
+      
+  
+    ;; mov r8, PVAR(-1)                   ; r8 = n (= PVAR(-1) = old args num)
+    mov r8, [rbp + 3*WORD_SIZE]  
+    ;; r8 holds the number of params of the A frame
+    add r8, 3                       
+    ;; r8 holds the size of the A frame --> number of params + the lexenv + #params pushed + return addr
+    shl r8, 3                       
+    ;;multiplied by 8 SO -->r8 now holds the number of bytes held by the A frame
+    add r8, rbp                     
+    ;;now r8 points to the last param(An-1) of the A frame
+
+    mov rbp, PVAR(-4)                ; rbp points to old rbp
+    ;;above line same as mov rbp, [rbp]
+
+    mov rcx, [rsp + WORD_SIZE * 2]   
+    ;; RCX HOLDS THE NUMBER OF ARGS IN THE B FRAME = List.length lst_str 
+    add rcx, 3                       
+    ;;rcx now holds the size of the new B frame --> M+3 -> #ARGS + LEX + RET-ADDR
+    
+    overwrite_frame16:
+    
+    mov r13, qword [rsp + WORD_SIZE * (rcx - 1)]
+    mov r13, qword [rsp + WORD_SIZE * (rcx +1 -2)]
+    mov [r8], qword r13
+    ;;SINCE WE CANT COPY FROM ONE MEMORY ADDRESS TO ANOTHER WE USE THE R13 REGISTER AS AN AUXILARY MEMORY STORAGE
+
+    sub r8, WORD_SIZE
+    ;;WE SUB BY WORDS_SIZE SINCE R8 IS IN BYTES
+    ;;now we move to the next cell of the stack
+    dec rcx
+    cmp rcx,0
+    jne overwrite_frame16
+  
+    add r8, WORD_SIZE               
+    ;; R8 HOLDS THE RETURN ADDRESS TO F 
+    mov rsp, r8    
+    ;;NOW WE HAVE UPDATED THE RSP -> STACK POINTER                
+
+    ;;NOW JUMP TO CODE OF CLOSURE
+    CLOSURE_CODE rax, rax            ; rax = rax -> code
+    jmp rax
+ jmp Lexit15
+        Lelse15:
+  mov rax, const_tbl +2
+
+Lexit15:
+
+      leave
+      ret
+    Lcont14:
+
+    leave
+    ret
+  Lcont13:
+
+ 
+      CLOSURE_ENV rbx, rax 
+
+      ;; RBX HOLDS THE ADDRESS OF THE ENV OF THE CLOSURE POINTED TO BY RAX REGITER 
+
+     
+      push rbx
+
+      ;; WE PUSH THE RBX SO THAT WE DONT OVERRIDE THE RBX REGISTER THAT POINTS TO THE CLOSURE ENV
+
+	
+
+      CLOSURE_CODE rdx, rax     
+      ;; RDX POINTS TO THE CODE OF THE CURRENT CLOSURE
+
+
+      call rdx 
+
+    ;; NOW WE CALLED THE BODY OF THE CLOSURE   
+	
+              
+      ;; TAKE CARE OF THE STACK --> clean the stack
+      add rsp, WORD_SIZE * 1    
+      pop rbx                  
+      shl rbx, 3               
+      add rsp, rbx 
+	
+mov qword[fvar_tbl + WORD_SIZE*38] , rax
+    mov rax,SOB_VOID_ADDRESS
+
+	call write_sob_if_not_void
+
+;; APPLIC IS HINAAAA 
+mov rax, qword [fvar_tbl + WORD_SIZE*2]
+
+push rax
+mov rax, qword [fvar_tbl + WORD_SIZE*1]
+
+push rax
+
+push 2
+;; THE INITIAL ENVIRONMENT IS EMPTY SO THERE IS NOTHING TO COPY
+    mov rdx, SOB_NIL_ADDRESS
+    ;;NOW WE TRY TO COPY PARAMS IF EXIST
+    mov rcx,qword[rbp + 3 * WORD_SIZE] ;;rcx holds the number of params
+    cmp rcx, 0
+    je lCopyParamsEnd17 ;;---> NO PARAMS TO COPY JUMP TO END
+
+    mov rax, qword[rbp + 3 * WORD_SIZE]
+    shl rax, 3
+  ;;NOW RAX HOLDS THE NUMBER OF BYTES WE WANT TO ALLOCATE
+  ;; cmp rcx, 0
+;; je lCopyParamsEnd17
+    MALLOC rax, rax
+;;MALLOC rax, WORD_SIZE * rcx ;;rax holds the address of the newly allocated array for params in extenv
+    mov qword[rdx], rax
+
+  lCopyParams17:
+;;cmp rcx,0 
+;;je lCopyParamsEnd17
+    mov r10, PVAR(rcx - 1) 
+    mov [rax+ 8*(rcx-1)], r10
+    dec rcx
+    cmp rcx,0
+    jne lCopyParams17
+;;jmp lCopyParams17
+    
+    lCopyParamsEnd17:
+    MAKE_CLOSURE(rax, rdx, Lcode17)
+
+    jmp Lcont17
+Lcode17:
+
+    push rbp
+    mov rbp , rsp
+    ;;LAMBDA IS HIIINA
+
+  ;;mov rdx, SOB_NIL_ADDRESS
+;; mov rcx,1
+;;cmp rcx , 0
+;;je lambdaEnvEnd18
+
+      mov rcx,1
+      MALLOC rdx , WORD_SIZE * 2 ;;rdx points to extended env
+      mov rbx, qword[rbp + WORD_SIZE*2] ;;point to lex env
+    lambdaEnv18:
+;;cmp rcx, 0
+;; je lambdaEnvEnd18
+      mov r10, qword[rbx + WORD_SIZE*(rcx-1)]
+      mov qword[rdx + WORD_SIZE*rcx], r10
+      dec rcx
+      cmp rcx, 0
+      jne lambdaEnv18 
+;; jmp lambdaEnv18 
+    lambdaEnvEnd18:
+
+    ;;NOW WE TRY TO COPY PARAMS IF EXIST
+      mov rcx,qword[rbp + 3 * WORD_SIZE] ;;rcx holds the number of params
+      cmp rcx, 0
+      je lCopyParamsEnd18 
+
+      mov rax, qword[rbp + 3 * WORD_SIZE]
+      shl rax, 3
+  ;;  cmp rcx, 0
+;;  je lCopyParamsEnd18
+      MALLOC rax, rax
+  ;;MALLOC rax, WORD_SIZE * rcx ;;rax holds the address of the newly allocated array for params in extenv
+      mov qword[rdx], rax
+
+    lCopyParams18:
+;;cmp rcx,0 
+;;je lCopyParamsEnd18
+      mov r10, PVAR(rcx - 1) 
+      mov [rax+ 8*(rcx-1)], r10
+      dec rcx
+      cmp rcx,0
+      jne lCopyParams18
+;;jmp lCopyParams18
+      
+      lCopyParamsEnd18:
+      MAKE_CLOSURE(rax, rdx, Lcode18)
+
+      jmp Lcont18
+Lcode18:
+
+      push rbp
+      mov rbp , rsp
+      ;; APPLIC IS HINAAAA 
+mov rax, PVAR(0)
+
+push rax
+
+push 1
+
+    mov rax ,qword[rbp + WORD_SIZE*2]
+    mov rax ,qword[rax + WORD_SIZE*0]
+    mov rax, qword[rax + WORD_SIZE*0]
+
+ 
+      CLOSURE_ENV rbx, rax 
+
+      ;; RBX HOLDS THE ADDRESS OF THE ENV OF THE CLOSURE POINTED TO BY RAX REGITER 
+
+     
+      push rbx
+
+      ;; WE PUSH THE RBX SO THAT WE DONT OVERRIDE THE RBX REGISTER THAT POINTS TO THE CLOSURE ENV
+
+	
+
+      CLOSURE_CODE rdx, rax     
+      ;; RDX POINTS TO THE CODE OF THE CURRENT CLOSURE
+
+
+      call rdx 
+
+    ;; NOW WE CALLED THE BODY OF THE CLOSURE   
+	
+              
+      ;; TAKE CARE OF THE STACK --> clean the stack
+      add rsp, WORD_SIZE * 1    
+      pop rbx                  
+      shl rbx, 3               
+      add rsp, rbx 
+	
+cmp rax, SOB_FALSE_ADDRESS
+        jne Lexit19
+mov rax, PVAR(0)
+
+push rax
+push 1
+
+    mov rax ,qword[rbp + WORD_SIZE*2]
+    mov rax ,qword[rax + WORD_SIZE*0]
+    mov rax, qword[rax + WORD_SIZE*1]
+;;APPLICTP IS HINNAAA
+ CLOSURE_ENV rbx, rax              ; rbx = rax -> env 
+
+      push rbx 
+     
+      ;; why plus one  
+      push qword [rbp + WORD_SIZE * 1] 
+ ;push the old ret addr as a ret address for h
+   
+      
+  
+    ;; mov r8, PVAR(-1)                   ; r8 = n (= PVAR(-1) = old args num)
+    mov r8, [rbp + 3*WORD_SIZE]  
+    ;; r8 holds the number of params of the A frame
+    add r8, 3                       
+    ;; r8 holds the size of the A frame --> number of params + the lexenv + #params pushed + return addr
+    shl r8, 3                       
+    ;;multiplied by 8 SO -->r8 now holds the number of bytes held by the A frame
+    add r8, rbp                     
+    ;;now r8 points to the last param(An-1) of the A frame
+
+    mov rbp, PVAR(-4)                ; rbp points to old rbp
+    ;;above line same as mov rbp, [rbp]
+
+    mov rcx, [rsp + WORD_SIZE * 2]   
+    ;; RCX HOLDS THE NUMBER OF ARGS IN THE B FRAME = List.length lst_str 
+    add rcx, 3                       
+    ;;rcx now holds the size of the new B frame --> M+3 -> #ARGS + LEX + RET-ADDR
+    
+    overwrite_frame20:
+    
+    mov r13, qword [rsp + WORD_SIZE * (rcx - 1)]
+    mov r13, qword [rsp + WORD_SIZE * (rcx +1 -2)]
+    mov [r8], qword r13
+    ;;SINCE WE CANT COPY FROM ONE MEMORY ADDRESS TO ANOTHER WE USE THE R13 REGISTER AS AN AUXILARY MEMORY STORAGE
+
+    sub r8, WORD_SIZE
+    ;;WE SUB BY WORDS_SIZE SINCE R8 IS IN BYTES
+    ;;now we move to the next cell of the stack
+    dec rcx
+    cmp rcx,0
+    jne overwrite_frame20
+  
+    add r8, WORD_SIZE               
+    ;; R8 HOLDS THE RETURN ADDRESS TO F 
+    mov rsp, r8    
+    ;;NOW WE HAVE UPDATED THE RSP -> STACK POINTER                
+
+    ;;NOW JUMP TO CODE OF CLOSURE
+    CLOSURE_CODE rax, rax            ; rax = rax -> code
+    jmp rax
+ Lexit19:
+
+      leave
+      ret
+    Lcont18:
+
+    leave
+    ret
+  Lcont17:
+
+ 
+      CLOSURE_ENV rbx, rax 
+
+      ;; RBX HOLDS THE ADDRESS OF THE ENV OF THE CLOSURE POINTED TO BY RAX REGITER 
+
+     
+      push rbx
+
+      ;; WE PUSH THE RBX SO THAT WE DONT OVERRIDE THE RBX REGISTER THAT POINTS TO THE CLOSURE ENV
+
+	
+
+      CLOSURE_CODE rdx, rax     
+      ;; RDX POINTS TO THE CODE OF THE CURRENT CLOSURE
+
+
+      call rdx 
+
+    ;; NOW WE CALLED THE BODY OF THE CLOSURE   
+	
+              
+      ;; TAKE CARE OF THE STACK --> clean the stack
+      add rsp, WORD_SIZE * 1    
+      pop rbx                  
+      shl rbx, 3               
+      add rsp, rbx 
+	
+mov qword[fvar_tbl + WORD_SIZE*39] , rax
+    mov rax,SOB_VOID_ADDRESS
+
+	call write_sob_if_not_void
+
+;; APPLIC IS HINAAAA 
+  mov rax, const_tbl +6
+
+push rax
+
+push 1
+mov rax, qword [fvar_tbl + WORD_SIZE*37]
+
+ 
+      CLOSURE_ENV rbx, rax 
+
+      ;; RBX HOLDS THE ADDRESS OF THE ENV OF THE CLOSURE POINTED TO BY RAX REGITER 
+
+     
+      push rbx
+
+      ;; WE PUSH THE RBX SO THAT WE DONT OVERRIDE THE RBX REGISTER THAT POINTS TO THE CLOSURE ENV
+
+	
+
+      CLOSURE_CODE rdx, rax     
+      ;; RDX POINTS TO THE CODE OF THE CURRENT CLOSURE
+
+
+      call rdx 
+
+    ;; NOW WE CALLED THE BODY OF THE CLOSURE   
+	
+              
+      ;; TAKE CARE OF THE STACK --> clean the stack
+      add rsp, WORD_SIZE * 1    
+      pop rbx                  
+      shl rbx, 3               
+      add rsp, rbx 
+	
 
 	call write_sob_if_not_void;;; Clean up the dummy frame, set the exit status to 0 ("success"), 
    ;;; and return from main
@@ -768,5 +2185,91 @@ cons:
        mov rsi, PVAR(0)
 	mov rdi, PVAR(1)
 	MAKE_PAIR(rax, rsi, rdi)
+         pop rbp
+         ret
+
+apply:
+       push rbp
+       mov rbp, rsp 
+       mov rsi, PVAR(0)
+	
+            
+        mov rbx, [rsp + 8 * 3]
+        mov rax, PVAR((rbx - 1)); k
+        PAIR_LENGTH   ;rax is the length
+        mov rbx, [rsp + 8 * 3] ;n
+        
+        cmp rax, 0
+        je .equals
+        .notequals:
+        .dealwithrest:
+           lea rcx, [rax-1]
+           mov rdx, 0
+           lea rsi, [rbx + 3] 
+           .restloop:
+           cmp rsi, 0
+           je .dealwithlist
+           mov rax, [rsp + 8 * (rdx)]
+           mov rbx, rdx
+           sub rbx, rcx
+           mov [rsp + 8 * (rbx)], rax
+           inc rdx
+           dec rsi
+           jmp .restloop
+       
+        .dealwithlist:
+           lea rax, [8* rcx]
+           sub rsp, rax
+       
+           mov rax, [rsp + 8 * 3]
+           lea rbx, [rsp+8*(3+rax)]
+           add rax, rcx
+           mov [rsp + 8 * 3], rax
+           mov rax, [rsp + 8 * (3 + rax)]  ;;RAX WILL ALWAYS POINT AT THE CURRENT PAIR
+       
+       
+       
+        .listloop:
+           cmp rax, SOB_NIL_ADDRESS
+           je .callthefunc
+           CAR rcx, rax
+           CDR rax, rax
+           mov [rbx], rcx
+           add rbx, 8
+           jmp .listloop
+       
+        .equals:
+        mov rbx, [rsp + 8 * 3]
+        add rbx, 2
+        .eloop:
+               mov rcx ,[rsp + 8 *(rbx)]
+               mov [rsp + 8 *(rbx+1)], rcx
+               cmp rbx, 0
+               je .eend
+               dec rbx
+               jmp .eloop
+        .eend:
+        pop rbx
+        sub qword [rsp + 8 * 3], 1
+        
+        .callthefunc:
+           mov rax, [rsp + 8 * 4]
+           mov rbx, [rsp + 8*3]
+           mov [rsp + 8*4], rbx
+           mov rbx, [rsp + 8*2]
+           mov [rsp + 8*3], rbx
+           mov rbx, [rsp + 8*1]
+           mov [rsp + 8*2], rbx
+           mov rbx, [rsp + 8*0]
+           mov [rsp + 8*1], rbx
+           add rsp, 8
+           sub qword[rsp +8*3], 1
+           CLOSURE_ENV rbx, rax
+           mov [rsp + 8*2], rbx
+           CLOSURE_CODE rbx, rax
+           pop rbp
+           jmp rbx
+        
+           
          pop rbp
          ret

@@ -240,7 +240,9 @@
  
  and  nt_VisibleSimpleChaar str =
  let nt1 = const (fun ch -> ch > (char_of_int 32)) in
- let nt1 = not_followed_by nt1 nt1 in
+ (**added this line to check when arc after char*)
+ let nt2 = const (fun ch -> ((ch > (char_of_int 55)) && ((ch < (char_of_int 122))))) in
+ let nt1 = not_followed_by nt1 nt2 in
  nt1 str
  
  

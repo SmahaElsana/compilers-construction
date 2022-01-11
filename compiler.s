@@ -170,6 +170,19 @@
         dq %3
 %endmacro
 
+%macro PAIR_LENGTH 0
+       mov rdx, 0
+       %%leap:
+       cmp rax, SOB_NIL_ADDRESS
+	   CAR rcx, rax
+       je %%endleap
+       inc rdx
+       CDR rax, rax
+       jmp %%leap
+       %%endleap:
+       mov rax, rdx
+%endmacro
+
 ; my addition
 %macro MAKE_LITERAL 2 ; Make a literal of type %1 followed by the definition %2
 db %1
