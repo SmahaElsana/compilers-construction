@@ -170,11 +170,12 @@
         dq %3
 %endmacro
 
-%macro PAIR_LENGTH 0
-       mov rdx, 0
+%macro ARGSIZE 0
+       ;;mov rdx, 0
+	   xor rdx,rdx
        %%leap:
        cmp rax, SOB_NIL_ADDRESS
-	   CAR rcx, rax
+	   ;;CAR rcx, rax
        je %%endleap
        inc rdx
        CDR rax, rax

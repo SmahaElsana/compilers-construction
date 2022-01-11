@@ -361,8 +361,107 @@ module Prims : PRIMS = struct
         ", make_binary , "set_cdr";
         (*cons*)
          "MAKE_PAIR(rax, rsi, rdi)", make_binary, "cons"; 
+
         (*apply*)
-        "",make_unary,"apply";
+        "
+        mov rbx, [rbp + 8*3]
+        mov rax, [rbp + 8*6]
+       ;;THE SECOND ARGUMENT IS THE LIST WE WANT TO APPLY THE FUNCTION TO
+        ARGSIZE   
+        cmp rax, 0
+        jne .emptylist
+
+      ;;THE LIST IS NOT NOT EMPTY
+      ;;START OF HANDLING THE PARAMS IN THE LIST OF THE APPLY FUNCTION************************************
+        mov rbx, [rbp + 8*3]
+        add rbx, 3
+
+      ;;HERE WE SHIFT THE STACK IN ORDER TO PREPARE IT FOR THE APPLIED FUNCTION
+        .shiftingTheParams:
+               dec rbx
+               mov rcx ,[rbp + 8 *(rbx)]
+               mov [rbp + 8*(rbx+1)], rcx
+               cmp rbx, 0
+               jne .shiftingTheParams
+      ;; END OF DEALING WITH THE LIST OF PARAMS OF THE APPLY FUNCTION
+
+
+        pop rbx
+        sub qword [rbp + 8*3], 1
+         jmp .applyfunction
+        ;;AT THIS POINT WE
+
+        .emptylist:
+          mov rcx, rax
+          dec rcx
+           mov rdx, 0
+          mov rsi, rbx
+          add rsi,3
+
+
+      ;;vvvvvSTART MOVING THE FOLLWINGvvvvvv
+           .moveTheFollowing:
+           dec rsi
+           mov rax, [rbp + 8*(rdx)]
+           mov rbx, rdx
+           sub rbx, rcx
+           inc rdx
+           mov [rbp + 8*(rbx)], rax
+           cmp rsi, 0
+           jne .moveTheFollowing
+    ;;^^^^^^^^^FINISHE THE MOVING^^^^^^^^^^^^ 
+
+
+          ;;vvvvNOW WE LOAD THE SIZE TO THE RAX REGISTERvvv
+          mov rax,rcx
+          shl rax,3
+          ;;^^^SHIFT BY 3 IS THE SAME AS MUL BY 8 IN ORDER TO GET THE BYTES SIZE^^^
+           sub rsp, rax
+       
+           mov rax, [rsp + 8*3]
+           lea rbx, [rsp+8*(3+rax)]
+           add rax, rcx
+           mov [rsp + 8*3], rax
+           mov rax, [rsp + 8*(3+rax)]  
+          ;;RAX WILL ALWAYS POINT AT THE CURRENT PAIR
+       
+       
+        ;; vvvvvvvvMAKE THE LIST PARAMS AS THE FUNCTION PARAMSvvvvvvv
+        .loadListAsParams:
+           CAR rcx, rax
+           CDR rax, rax
+           mov [rbx], rcx
+           add rbx, 8
+           cmp rax, SOB_NIL_ADDRESS
+           jne .loadListAsParams
+      ;;^^^^^^
+          
+        ;;WE PREPARE THE STACK FOR THE APPLICATION
+      ;; OF THE FUNCTION ON THE PARAMS OF THE LIST AS ITS OWN PARAMS
+    
+        .applyfunction:
+      ;;vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+          mov rax, [rbp + 8*4]
+        ;;NOW RAX POINTS TO THE FUNCTION WE WANT TO APPLY
+
+          mov rcx, 3
+         .myshift:
+          mov rbx,[rbp + 8*rcx]
+          mov [rbp + 8*(rcx+1)], rbx
+          loop .myshift
+      ;;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+      ;;THE STACK HAS BEEN SHIFTED TO MATCH THE APPLICATION OF THE FUNCTION APPLIED
+           add rsp, 8
+           sub qword[rbp +8*4], 1
+           CLOSURE_ENV rbx, rax
+           mov [rbp + 8*3], rbx
+           CLOSURE_CODE rbx, rax
+          ;;RBX HOLDS THE ADDRESS POINTING AT THE START OF THE APPLIED FUNCTION
+           pop rbp
+           jmp rbx
+                
+                ",make_unary,"apply";
       ] in
     String.concat "\n\n" (List.map (fun (a, b, c) -> (b c a)) misc_parts);;
 
