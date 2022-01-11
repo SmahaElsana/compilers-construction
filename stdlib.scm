@@ -35,31 +35,6 @@
 ; 			  end
 ; 			  (f (car lst) (rfold f end (cdr lst))))))))
 
-; (define fold-left 
-;   #;(Add your implementation here
-;      Note: The file won't compile like this, beacuase your tag-parser requires define to have a second expression.
-;      This is on purpose, so you don't compile the library without completing this implementation by mistake.)
-;     (let ((null? null?)
-;           (car car) 
-;           (cdr cdr))
-;       (letrec ((fold-left-loop 
-;                  (lambda (f acc lst) 
-;                    (if (null? lst) 
-;                        acc
-;                        (fold-left-loop f (f acc (car lst)) (cdr lst))))))
-;         fold-left-loop)))
-
-; (define fold-right
-;     (let ((null? null?)
-;           (car car) 
-;           (cdr cdr))
-;       (letrec ((fold-right-loop 
-;                  (lambda (g acc lst) 
-;                    (if (null? lst) 
-;                        acc
-;                        (g (car lst) (fold-right-loop g acc (cdr lst)))))))
-;         fold-right-loop)))
-
 
 ; (define cons*
 ;   (let (car car) (cdr cdr) (null? null?) (cons cons))
@@ -71,30 +46,33 @@
 ; 			  (cons (car lst) (conall (cdr lst))))))))
 
 ; (define cons*
-;     (let ((null? null?)
-;           (car car)
+;     (let ((car car)
 ;           (cdr cdr)
+ ; 
+ ; (null? null?)
+;           (apply apply)
 ;           (cons cons)
-;           (apply apply))
-;       (letrec ((cons*-loop
+;           )
+;       (letrec ((consall
 ;                  (lambda lst
 ;                    (if (null? (cdr lst))
 ;                        (car lst)
-;                        (cons (car lst) (apply cons*-loop (cdr lst)))))))
-;         cons*-loop))
+;                        (cons (car lst) (apply consall (cdr lst)))))))
+;         consall))
 
-(define (fold-left f init seq) 
-   (if (null? seq) 
+;;NON LETREC IMPLEMENTATION OF FOLD-LEFT
+(define (fold-left f init lst) 
+   (if (null? lst) 
        init 
        (fold-left f 
-                  (f init (car seq)) 
-                  (cdr seq)))) 
-
-(define (fold-right f init seq) 
-   (if (null? seq) 
+                  (f init (car lst)) 
+                  (cdr lst)))) 
+;;NON LETREC IMPLEMENTATION OF FOLD-RIGHT
+(define (fold-right f init lst) 
+   (if (null? lst) 
        init 
-       (f (car seq) 
-           (fold-right f init (cdr seq)))))
+       (f (car lst) 
+           (fold-right f init (cdr lst)))))
 
 
 
