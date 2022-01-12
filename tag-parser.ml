@@ -211,12 +211,12 @@ let rec  check_duplications lst =
                   |[]->(check_duplications tl)
                   |_ ->true
 ;;    
-
+(** HELPER FUNCTION TO CREATE THE ARGS LIST FOR LAMBDA OPT*)
 let rec lambdaOpt_args_creat args lst = match args with         
         | ScmPair(ScmSymbol(s), rest) -> lambdaOpt_args_creat rest (lst@[s])
         | ScmSymbol(last) -> (lst, last)
         |_-> raise X_letrec;;
-
+(**WE CALL THE ABOVE RECURSIVE FUNCTION WITH AN EMPTY LIST AS INITAL LIST*)
 let lambdaOpt_args args = lambdaOpt_args_creat args [];;
 
 let rec simple_lambda_args_helper args lst = match args with         
@@ -226,6 +226,8 @@ let rec simple_lambda_args_helper args lst = match args with
 
 let simple_lambda_args args = simple_lambda_args_helper args [];;
 
+(**TWO DIFFERENT RECURSIVE FUNCTIONS FOR THE ARGS OF OPT AND
+ SIMPLE SINCE ONE SHOULD BE PROPER LIST AND THE OTHER SHOULD BE IMPROPER *)
 let rec letrec_ribs ribs =
   (match ribs with
   | ScmNil -> ScmNil
@@ -288,12 +290,12 @@ match sexpr with
 )
   
 |ScmPair(ScmSymbol "define", ScmPair(var_name, value)) ->( let exp_var_name = tag_parse_expression var_name in
-                                                  (match value with
-                                                        | ScmNil -> ScmDef (exp_var_name, ScmConst(ScmVoid)) (*check again HERE*)
-                                                        | ScmPair(valSexp, ScmNil) -> ScmDef (exp_var_name, (tag_parse_expression valSexp)) 
-                                                        (**new addition *)
-                                                        (* | ScmPair(_,_) -> ScmDef(exp_var_name, tag_parse_expression(macro_expand(value)))  *)
-                                                        |_ -> raise X_define))
+  (match value with
+        | ScmNil -> ScmDef (exp_var_name, ScmConst(ScmVoid)) (*check again HERE*)
+        | ScmPair(valSexp, ScmNil) -> ScmDef (exp_var_name, (tag_parse_expression valSexp)) 
+        (**new addition *)
+        (* | ScmPair(_,_) -> ScmDef(exp_var_name, tag_parse_expression(macro_expand(value)))  *)
+        |_ -> raise X_define))
 
 (* |ScmPair(ScmSymbol "set!",ScmPair(varname, ScmPair(sexpr,ScmNil))) -> ScmPair(tag_parse_expression varname, tag_parse_expression sexpr ) *)
 |ScmPair(ScmSymbol "set!",ScmPair(ScmSymbol var, ScmPair(sexpr,ScmNil))) -> ScmSet(tag_parse_expression(ScmSymbol var),tag_parse_expression sexpr )
@@ -354,7 +356,7 @@ match sexpr with
   | ScmPair(first_rib, rest_ribs) ->
 
             let (vars, vals) =
-
+(***HERE WE ZIP THE VAR WITH ITS VALUE INTO A PAIR FOR THE LET RIBS BEFORE LAMBDA*)
               List.fold_right
 
                 (fun rib_lst (vars, vals) ->
@@ -372,6 +374,7 @@ match sexpr with
 |ScmPair(ScmSymbol "let*",ScmPair(n_exps,body)) ->
   (match n_exps with
   |ScmNil -> macro_expand(ScmPair(ScmSymbol "let",ScmPair(ScmNil,body)))
+  (**WHEN THE RIBS ARE EMPTY THERE IS NO NEED TO DEFINE LET* RECURSIVLE AND ENOUGH TO HAVE ONE LET*)
   |ScmPair(r,ScmNil) -> macro_expand(ScmPair(ScmSymbol "let",ScmPair(ScmPair(r,ScmNil),body)))
   |ScmPair(r, ribs) -> macro_expand(ScmPair(ScmSymbol "let", ScmPair(ScmPair(r, ScmNil), ScmPair(ScmPair(ScmSymbol "let*", ScmPair(ribs, body)), ScmNil))))
   |_-> raise X_bad_letstar)
@@ -379,6 +382,7 @@ match sexpr with
 (*letrec*)
 |ScmPair(ScmSymbol "letrec", ScmPair(ribs, body)) -> 
   (match ribs with 
+  (**LETREC SAME AS THE ABOVE WHRN THE RIBS ARE EMPTY ITS ENOUGHT TO HAVE ONE LET*)
   |ScmNil ->  macro_expand(ScmPair(ScmSymbol "let", ScmPair(ScmNil, body))) 
   |ScmPair(first_rib, rest_ribs) -> macro_expand(ScmPair(ScmSymbol "let", ScmPair((letrec_ribs ribs), (letrec_body ribs body))))
   |_ -> raise X_bad_letrec)
