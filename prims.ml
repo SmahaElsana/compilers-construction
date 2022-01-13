@@ -348,21 +348,27 @@ module Prims : PRIMS = struct
          .make_result:
          MAKE_RATIONAL(rax, rdx, 1)", make_binary, "gcd";  
         (*car*)
+        (*USE RSI AND RDI AS INSTRUCTED*)
          "CAR rax, rsi", make_unary,"car";
         (*set-car!*)
+        (*USE RSI AND RDI AS INSTRUCTED*)
         "mov [rsi+1], rdi
          mov rax, SOB_VOID_ADDRESS
          ", make_binary , "set_car"; 
         (*cdr*)
+        (*USE RSI AND RDI AS INSTRUCTED*)
          "CDR rax, rsi", make_unary, "cdr";
         (*set-cdr!*)
+        (*USE RSI AND RDI AS INSTRUCTED*)
         "mov [rsi+9], rdi
          mov rax, SOB_VOID_ADDRESS
         ", make_binary , "set_cdr";
         (*cons*)
+        (*USE RSI AND RDI AS INSTRUCTED*)
          "MAKE_PAIR(rax, rsi, rdi)", make_binary, "cons"; 
 
         (*apply*)
+        (*USE RSI AND RDI AS INSTRUCTED*)
         "
         mov rbx, [rbp + 8*3]
         mov rax, [rbp + 8*6]

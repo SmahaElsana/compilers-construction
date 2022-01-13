@@ -355,19 +355,19 @@ match sexpr with
   | ScmNil ->  (ScmPair(ScmPair(ScmSymbol "lambda", ScmPair(ScmNil, body)), ScmNil))
   | ScmPair(first_rib, rest_ribs) ->
 
-            let (vars, vals) =
-(***HERE WE ZIP THE VAR WITH ITS VALUE INTO A PAIR FOR THE LET RIBS BEFORE LAMBDA*)
-              List.fold_right
-
-                (fun rib_lst (vars, vals) ->
-                    match rib_lst with
-                    | ScmPair(var, ScmPair(value, ScmNil)) -> (ScmPair(var, vars), ScmPair(value, vals))
-                    | _ -> raise X_let) 
-
-                (scm_list_to_list ribs) 
-                (ScmNil, ScmNil) 
-              in
-             (ScmPair(ScmPair(ScmSymbol "lambda", ScmPair(vars, body)), vals))
+    let (vars, vals) =
+    (***HERE WE ZIP THE VAR WITH ITS VALUE INTO A PAIR FOR THE LET RIBS BEFORE LAMBDA*)
+      List.fold_right
+    
+        (fun rib_lst (vars, vals) ->
+            match rib_lst with
+            | ScmPair(var, ScmPair(value, ScmNil)) -> (ScmPair(var, vars), ScmPair(value, vals))
+            | _ -> raise X_let) 
+        
+        (scm_list_to_list ribs) 
+        (ScmNil, ScmNil) 
+      in
+      (ScmPair(ScmPair(ScmSymbol "lambda", ScmPair(vars, body)), vals))
   | _ -> raise X_bad_lambda_body)
 
 (*let* *)
