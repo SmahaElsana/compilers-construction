@@ -48,8 +48,8 @@
 ; (define cons*
 ;     (let ((car car)
 ;           (cdr cdr)
- ; 
- ; (null? null?)
+ 
+;  (null? null?)
 ;           (apply apply)
 ;           (cons cons)
 ;           )
@@ -76,17 +76,14 @@
 
 
 
-; (define append
-;   (let ((null? null?)
-; 	(fold-right fold-right)
-; 	(cons cons))
-;     (lambda args
-;       (fold-right
-;        (lambda (e a)
-; 	 (if (null? a)
-; 	     e
-; 	     (fold-right cons a e)))
-;        '() args))))
+(define append
+    (lambda args
+      (fold-right
+       (lambda (e a)
+	 (if (null? a)
+	     e
+	     (fold-right cons a e)))
+       '() args)))
 
 (define list (lambda x x))
 
