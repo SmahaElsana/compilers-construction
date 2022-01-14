@@ -394,20 +394,24 @@
  and nt_list str = (disj improperList properList) str
  
  and nt_quoted str =
-   let quote = word "'" in
-   pack (caten quote nt_sexpr) (fun(a,b)->ScmPair(ScmSymbol("quote"),ScmPair(b,ScmNil))) str
+   let nt1 = word "'" in
+   pack (caten nt1 nt_sexpr) 
+   (fun(a,b)->ScmPair(ScmSymbol("quote"),ScmPair(b,ScmNil))) str
  
  and nt_quasiquoted str = 
-   let quasi = word "`" in
-   pack (caten quasi nt_sexpr) (fun(a,b)->ScmPair(ScmSymbol("quasiquote"),ScmPair(b,ScmNil))) str
+   let nt1 = word "`" in
+   pack (caten nt1 nt_sexpr) 
+   (fun(a,b)->ScmPair(ScmSymbol("quasiquote"),ScmPair(b,ScmNil))) str
  
  and nt_unquoted str =
-   let unquote = word "," in
-   pack (caten unquote nt_sexpr) (fun(a,b)->ScmPair(ScmSymbol("unquote"),ScmPair(b,ScmNil))) str
+   let nt1 = word "," in
+   pack (caten nt1 nt_sexpr) 
+   (fun(a,b)->ScmPair(ScmSymbol("unquote"),ScmPair(b,ScmNil))) str
  
  and nt_unquoteSpliced str =
-   let unqtsplcd = word ",@" in
-   pack (caten unqtsplcd nt_sexpr) (fun(a,b)->ScmPair(ScmSymbol("unquote-splicing"),(ScmPair(b,ScmNil)))) str
+   let nt1 = word ",@" in
+   pack (caten nt1 nt_sexpr) 
+   (fun(a,b)->ScmPair(ScmSymbol("unquote-splicing"),(ScmPair(b,ScmNil)))) str
  
  and nt_quoted_forms str = disj_list[(nt_quoted);(nt_quasiquoted);(nt_unquoted);(nt_unquoteSpliced)] str
  and nt_sexpr str = 
