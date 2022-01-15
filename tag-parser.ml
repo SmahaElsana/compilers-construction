@@ -262,14 +262,17 @@ match sexpr with
             (*please handle with many*)
             (* |ScmPair(car,cdr) -> ScmIf() *)
             |_ -> raise X_if)
+
+
 |ScmPair (ScmSymbol "or", sexpr_pairs) -> (match sexpr_pairs with
-                                            |ScmNil -> ScmConst (ScmBoolean false)
-                                            |ScmPair (sexp, ScmNil)-> tag_parse_expression sexp
-                                            (**new addition *)
-                                            | ScmPair(sexpr1, cdr)-> ScmOr( List.map tag_parse_expression (scm_list_to_list sexpr_pairs))
-                                            |_ -> raise X_got_to_or)
-|ScmPair(ScmSymbol "lambda",ScmPair(args, body))->(
-  let lambda_body = (match body  with
+    |ScmNil -> ScmConst (ScmBoolean false)
+    |ScmPair (sexp, ScmNil)-> tag_parse_expression sexp
+    (**new addition *)
+    | ScmPair(sexpr1, cdr)-> ScmOr( List.map tag_parse_expression (scm_list_to_list sexpr_pairs))
+    |_ -> raise X_got_to_or)
+
+
+|ScmPair(ScmSymbol "lambda",ScmPair(args, body))->(let lambda_body = (match body  with
             |ScmPair(car,ScmNil)-> tag_parse_expression car
             (* |ScmPair(car,cdr)->ScmSeq (List.map tag_parse_expression (scm_list_to_list body)) *)
             |ScmPair(car,cdr)->tag_parse_expression (ScmPair(ScmSymbol "begin",body))
@@ -277,6 +280,7 @@ match sexpr with
             |_-> raise X_bad_lambda_body(**empty body*)) in
   if(scm_is_list args)
     (*simple lambda*)
+  (**chack for duplicated vars*)
   then(if(check_duplications (scm_list_to_list args)) 
           then raise X_vars_duplicated 
           else ScmLambdaSimple( (simple_lambda_args args),lambda_body))
@@ -284,13 +288,14 @@ match sexpr with
   else(let (args, last) = lambdaOpt_args args in ScmLambdaOpt(args, last, lambda_body)) (*need to check duplications for opt args*)
 )
 
+
 |ScmPair(ScmSymbol "define",ScmPair(ScmPair(var,args),body)) ->(match var with
 |ScmSymbol s -> ScmDef( (tag_parse_expression var),tag_parse_expression (ScmPair(ScmSymbol "lambda", ScmPair(args,body))))
 |_->raise X_bad_MIT
 )
+
   
-|ScmPair(ScmSymbol "define", ScmPair(var_name, value)) ->( let exp_var_name = tag_parse_expression var_name in
-  (match value with
+|ScmPair(ScmSymbol "define", ScmPair(var_name, value)) ->( let exp_var_name = tag_parse_expression var_name in (match value with
         | ScmNil -> ScmDef (exp_var_name, ScmConst(ScmVoid)) (*check again HERE*)
         | ScmPair(valSexp, ScmNil) -> ScmDef (exp_var_name, (tag_parse_expression valSexp)) 
         (**new addition *)
@@ -316,42 +321,55 @@ match sexpr with
 (* |ScmPair(ScmSymbol "define",ScmPair(ScmPair(var,args),body)) ->
   ScmPair(ScmSymbol "define",ScmPair(var,(ScmPair(ScmSymbol "lambda", ScmPair(args,body))))) *)
 
-| ScmPair(ScmSymbol "and", pairs) -> 
-  (match pairs with
+| ScmPair(ScmSymbol "and", pairs) -> (match pairs with
   |ScmNil -> ScmBoolean true
   |ScmPair(car, ScmNil)-> car
   |ScmPair(car,cdr)-> ScmPair(ScmSymbol "if",ScmPair(car, ScmPair (ScmPair(ScmSymbol "and", cdr), ScmPair(ScmBoolean(false),ScmNil)  )))
   |_-> raise X_and_macro
   )
   
+
+
+
 (* Handle macro expansion patterns here *)
 |ScmPair(ScmSymbol "cond",ribs) ->(match ribs with
   (**else rib in a cond *)
   |ScmPair(ScmPair(ScmSymbol "else", rest),_)-> ScmPair(ScmSymbol "begin",rest)
 
-  |ScmPair(ScmPair(test,ScmPair(ScmSymbol "=>",ScmPair(dit,ScmNil))), seq) -> 
-    (match seq with
+  |ScmPair(ScmPair(test,ScmPair(ScmSymbol "=>",ScmPair(dit,ScmNil))), seq) -> (match seq with
     (*base case*)
+    
     |ScmNil ->  macro_expand (ScmPair(ScmSymbol "let", ScmPair(ScmPair(ScmPair(ScmSymbol "value", ScmPair(test, ScmNil)), 
+    (**create embedded lambda*)
       ScmPair(ScmPair(ScmSymbol "f", ScmPair(ScmPair(ScmSymbol "lambda", ScmPair(ScmNil, ScmPair(dit, ScmNil))), ScmNil)), ScmNil)), 
       ScmPair(ScmPair(ScmSymbol "if", ScmPair(ScmSymbol "value", ScmPair(ScmPair(ScmPair(ScmSymbol "f", ScmNil), ScmPair(ScmSymbol "value", ScmNil)), ScmNil))), ScmNil))))
-    (**IF NON OF THE ABOVE OPTIONS MATCH THEN ITS THE REGULAR COND EXPRESSION *)
+    
+
+    
+        (**IF NON OF THE ABOVE OPTIONS MATCH THEN ITS THE REGULAR COND EXPRESSION *)
     |_ -> macro_expand(ScmPair(ScmSymbol "let", ScmPair(ScmPair(ScmPair(ScmSymbol "value", ScmPair(test, ScmNil)), 
+      (**create the first embeded lambda*)
       ScmPair(ScmPair(ScmSymbol "f", ScmPair(ScmPair(ScmSymbol "lambda", ScmPair(ScmNil, ScmPair(dit, ScmNil))), ScmNil)), 
+      (**create the second embeded lambda*)
       ScmPair(ScmPair(ScmSymbol "rest", ScmPair(ScmPair(ScmSymbol "lambda", ScmPair(ScmNil, ScmPair(ScmPair(ScmSymbol "cond", seq), ScmNil))), ScmNil)), ScmNil))), 
+      (**create the if test for the above cond*)
       ScmPair(ScmPair(ScmSymbol "if", ScmPair(ScmSymbol "value", ScmPair(ScmPair(ScmPair(ScmSymbol "f", ScmNil), ScmPair(ScmSymbol "value", ScmNil)), 
       ScmPair(ScmPair(ScmSymbol "rest", ScmNil), ScmNil)))), ScmNil))))
     )
   
-
+  (**if its not an else or an arrow then return a seq as a begin *)
   |ScmPair(ScmPair(test,cdr),rest) -> (match rest with 
+  (**the rest of the test pair is null*)
       |ScmNil -> (ScmPair (ScmSymbol "if",ScmPair(test, ScmPair( ScmPair(ScmSymbol "begin", cdr),ScmNil))))
+        (**take care of all the cases not null*)
       |_ -> ScmPair(ScmSymbol "if",ScmPair(test,ScmPair(ScmPair(ScmSymbol "begin",cdr), ScmPair(ScmPair(ScmSymbol "cond",rest),ScmNil)))))
   |_-> raise X_my_exception
   )
-(*let*)
-|ScmPair(ScmSymbol "let", ScmPair(ribs, body)) -> 
-  (match ribs with
+
+
+
+(*let expansion according to lectures*)
+|ScmPair(ScmSymbol "let", ScmPair(ribs, body)) -> (match ribs with
   | ScmNil ->  (ScmPair(ScmPair(ScmSymbol "lambda", ScmPair(ScmNil, body)), ScmNil))
   | ScmPair(first_rib, rest_ribs) ->
 
@@ -370,23 +388,24 @@ match sexpr with
       (ScmPair(ScmPair(ScmSymbol "lambda", ScmPair(vars, body)), vals))
   | _ -> raise X_bad_lambda_body)
 
-(*let* *)
-|ScmPair(ScmSymbol "let*",ScmPair(n_exps,body)) ->
-  (match n_exps with
-  |ScmNil -> macro_expand(ScmPair(ScmSymbol "let",ScmPair(ScmNil,body)))
+(*let* according to lectures*)
+|ScmPair(ScmSymbol "let*",ScmPair(n_exps,body)) ->(match n_exps with
   (**WHEN THE RIBS ARE EMPTY THERE IS NO NEED TO DEFINE LET* RECURSIVLE AND ENOUGH TO HAVE ONE LET*)
+  |ScmNil -> macro_expand(ScmPair(ScmSymbol "let",ScmPair(ScmNil,body)))
+  (**this is the second base case as seen in the lectures*)
   |ScmPair(r,ScmNil) -> macro_expand(ScmPair(ScmSymbol "let",ScmPair(ScmPair(r,ScmNil),body)))
+  (**this is the recursive case*)
   |ScmPair(r, ribs) -> macro_expand(ScmPair(ScmSymbol "let", ScmPair(ScmPair(r, ScmNil), ScmPair(ScmPair(ScmSymbol "let*", ScmPair(ribs, body)), ScmNil))))
   |_-> raise X_bad_letstar)
 
-(*letrec*)
-|ScmPair(ScmSymbol "letrec", ScmPair(ribs, body)) -> 
-  (match ribs with 
+(*letrec as seen in class*)
+|ScmPair(ScmSymbol "letrec", ScmPair(ribs, body)) -> (match ribs with 
   (**LETREC SAME AS THE ABOVE WHRN THE RIBS ARE EMPTY ITS ENOUGHT TO HAVE ONE LET*)
   |ScmNil ->  macro_expand(ScmPair(ScmSymbol "let", ScmPair(ScmNil, body))) 
+  (**this is the recursive case*)
   |ScmPair(first_rib, rest_ribs) -> macro_expand(ScmPair(ScmSymbol "let", ScmPair((letrec_ribs ribs), (letrec_body ribs body))))
   |_ -> raise X_bad_letrec)
-
+(**for quasi qoute we use a helper function*)
 |ScmPair(ScmSymbol "quasiquote", ScmPair(s, ScmNil)) -> (qq_helper s)
 
 | _ -> sexpr
