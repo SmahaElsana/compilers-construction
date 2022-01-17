@@ -264,7 +264,8 @@ match sexpr with
             |_ -> raise X_if)
 
 
-|ScmPair (ScmSymbol "or", sexpr_pairs) -> (match sexpr_pairs with
+|ScmPair (ScmSymbol "or", sexpr_pairs) -> 
+  (match sexpr_pairs with
     |ScmNil -> ScmConst (ScmBoolean false)
     |ScmPair (sexp, ScmNil)-> tag_parse_expression sexp
     (**new addition *)
@@ -272,7 +273,8 @@ match sexpr with
     |_ -> raise X_got_to_or)
 
 
-|ScmPair(ScmSymbol "lambda",ScmPair(args, body))->(let lambda_body = (match body  with
+|ScmPair(ScmSymbol "lambda",ScmPair(args, body))->
+  (let lambda_body = (match body  with
             |ScmPair(car,ScmNil)-> tag_parse_expression car
             (* |ScmPair(car,cdr)->ScmSeq (List.map tag_parse_expression (scm_list_to_list body)) *)
             |ScmPair(car,cdr)->tag_parse_expression (ScmPair(ScmSymbol "begin",body))

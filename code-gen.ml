@@ -139,58 +139,76 @@ module Code_Gen : CODE_GEN = struct
 
   let rec generate_helper consts fvars e env_size =
     match e with
-    | ScmConst' c -> "  mov rax, const_tbl +"
+    | ScmConst' c -> 
+      "  mov rax, const_tbl +"
     ^(string_of_int (fst (List.assoc c consts)))
     ^ "\n"
   
-    | ScmVar'(VarParam(str,minor)) -> "mov rax, PVAR("^(string_of_int minor)^")\n"
+    | ScmVar'(VarParam(str,minor)) -> 
+      "mov rax, PVAR("^(string_of_int minor)^")\n\n"
 
-    | ScmSet'(VarParam(_,minor), expr1) -> (generate_helper consts fvars expr1 env_size)^
-                                                    "mov qword[rbp+WORD_SIZE *(4+"^(string_of_int minor)^")] ,rax
-                                                    mov rax, SOB_VOID_ADDRESS\n"
+    | ScmSet'(VarParam(_,minor), expr1) ->
+       (generate_helper consts fvars expr1 env_size)^
+          "mov qword[rbp+WORD_SIZE *(4+"^(string_of_int minor)^")] ,rax\n
+          mov rax, SOB_VOID_ADDRESS\n"
                                                     
-    | ScmVar'(VarBound(_, major, minor)) -> "
-    mov rax ,qword[rbp + WORD_SIZE*2]
-    mov rax ,qword[rax + WORD_SIZE*"^(string_of_int major)^"]
+    | ScmVar'(VarBound(_, major, minor)) -> "\n
+
+    mov rax ,qword[rbp + WORD_SIZE*2]\n
+
+    mov rax ,qword[rax + WORD_SIZE*"^(string_of_int major)^"]\n
     mov rax, qword[rax + WORD_SIZE*"^(string_of_int minor)^"]\n"
       
-    | ScmSet'(VarBound(_, major, minor), expr1) -> (generate_helper consts fvars expr1 env_size)^
-    "mov rbx, qword[rbp+WORD_SIZE*2]
-    mov rbx, qword[rbx+WORD_SIZE*"^(string_of_int major)^"]
-    mov qword[rbx+WORD_SIZE*"^(string_of_int minor)^"],rax
-    mov rax,SOB_VOID_ADDRESS\n"
+    | ScmSet'(VarBound(_, major, minor), expr1) ->
+       (generate_helper consts fvars expr1 env_size)^
+         "mov rbx, qword[rbp+WORD_SIZE*2]\n
+         mov rbx, qword[rbx+WORD_SIZE*"^(string_of_int major)^"]\n
+         mov qword[rbx+WORD_SIZE*"^(string_of_int minor)^"],rax\n
+         mov rax,SOB_VOID_ADDRESS\n"
     (**COPYING THE ABOVE CODE FROM SLIDES GIVES AN ERROR FOR THE SQUARE BRACETS *)
                                                             (* "mov rbx, qword [rbp + 8 ∗ 2]
                                                              mov rbx, qword [rbx + 8 ∗"^(string_of_int major)^"]
                                                              mov qword [rbx + 8 ∗ "^(string_of_int minor)^"], rax
                                                              mov rax,  SOB_VOID_ADDRESS\n" *)
-    | ScmVar'(VarFree(str)) -> "mov rax, qword [fvar_tbl + WORD_SIZE*"^(offset_in_fvar_table str fvars)^"]\n"
-    | ScmSet'(VarFree(str), expr1) -> (generate_helper consts fvars expr1 env_size)^ 
-                                              "mov qword [fvar_tbl + WORD_SIZE*"^(offset_in_fvar_table str fvars)^"], rax
-                                               mov rax, SOB_VOID_ADDRESS\n"
+    | ScmVar'(VarFree(str)) ->
+       "mov rax, qword [fvar_tbl + WORD_SIZE*"^(offset_in_fvar_table str fvars)^"]\n"
+    | ScmSet'(VarFree(str), expr1) -> 
+      (generate_helper consts fvars expr1 env_size)^ 
+        "mov qword [fvar_tbl + WORD_SIZE*"^(offset_in_fvar_table str fvars)^"], rax\n
+          mov rax, SOB_VOID_ADDRESS\n"
     | ScmSeq'(expr_lst) -> List.fold_left (fun acc expr -> acc ^ (generate_helper consts fvars expr env_size)) "" expr_lst
 
-    | ScmOr'(expr_lst) -> let idxLexit = List.nth  (idx_labels ["Lexit"]) 0 in
+    | ScmOr'(expr_lst) -> 
+
+      let idxLexit = List.nth  (idx_labels ["Lexit"]) 0 in
+
       let rec ghOr lst endStr =
+
         match lst with
+
         |[] -> endStr
         |hd :: [] -> endStr ^(generate_helper consts fvars hd env_size) ^idxLexit^ ":\n"
         |hd::rest -> ghOr rest (endStr ^ (generate_helper consts fvars hd env_size)^"cmp rax, SOB_FALSE_ADDRESS
         jne "^ idxLexit ^"\n") in
+
       ghOr expr_lst ""
 
-    | ScmIf'(test,dit,dif) -> let idxLabels = idx_labels ["Lexit";"Lelse"] in
-                              let exitl = List.nth idxLabels 0 in
-                              let elsel = List.nth idxLabels 1 in
-                              ";;IF HEEEEEEERE \n"^
-        (generate_helper consts fvars test env_size)^"cmp rax, SOB_FALSE_ADDRESS
+
+    | ScmIf'(test,dit,dif) -> 
+        let idxLabels = idx_labels ["Lexit";"Lelse"] in
+        let exitl = List.nth idxLabels 0 in
+        let elsel = List.nth idxLabels 1 in
+        ";;IF HEEEEEEERE \n"^
+        (generate_helper consts fvars test env_size)^"cmp rax, SOB_FALSE_ADDRESS\n
         je "^elsel^"\n"^(generate_helper consts fvars dit env_size)^"jmp "^ exitl^"
         "^elsel^":\n"^(generate_helper consts fvars dif env_size)^"\n"^ exitl ^":\n"
 
-    | ScmBoxGet'(v) -> (generate_helper consts fvars (ScmVar'(v)) env_size)^"\nmov rax, qword [rax]\n"
-    | ScmBoxSet'((v), expr) -> (generate_helper consts fvars expr env_size) ^ "push rax\n" ^
-                                        (generate_helper consts fvars (ScmVar'(v)) env_size) ^"pop qword [rax]
-                                                                                               mov rax, SOB_VOID_ADDRESS\n"
+    | ScmBoxGet'(v) -> 
+        (generate_helper consts fvars (ScmVar'(v)) env_size)^"\nmov rax, qword [rax]\n"
+    | ScmBoxSet'((v), expr) -> 
+        (generate_helper consts fvars expr env_size) ^ "push rax\n" ^
+        (generate_helper consts fvars (ScmVar'(v)) env_size) ^"pop qword [rax]\n
+                                                                mov rax, SOB_VOID_ADDRESS\n"
     | ScmApplic'(expr,expr_lst) -> 
         (* let rec applicPrms lst =
           (match lst with 
@@ -330,12 +348,12 @@ module Code_Gen : CODE_GEN = struct
 
     | ScmBox'(var) ->
       (* "MALLOC rdx, WORD_SIZE\n" ^ *)
-                  (generate_helper consts fvars (ScmVar' var) env_size) ^ (**return value of generate_helper is saved in rax*)
-                  "MALLOC rdx, WORD_SIZE
-                  mov qword [rdx], rax
-                  ;;RAX HOLDS THA RETURNED VALUE OF THE GENERATE_HELPER FUNCTION
-                  ;;RDX HOLDS THE ADDRESS OF SPACE ALLOCATED
-                   mov rax, rdx\n"
+        (generate_helper consts fvars (ScmVar' var) env_size) ^ (**return value of generate_helper is saved in rax*)
+        "MALLOC rdx, WORD_SIZE
+        mov qword [rdx], rax
+        ;;RAX HOLDS THA RETURNED VALUE OF THE GENERATE_HELPER FUNCTION
+        ;;RDX HOLDS THE ADDRESS OF SPACE ALLOCATED
+          mov rax, rdx\n"
 
     | ScmLambdaOpt'(str_lst, str_opt, expr) ->
       let lbls = idx_labels ["lambdaEnv";"lambdaEnvEnd";"lCopyParams";"lCopyParamsEnd";"Lcode"; "Lcont";"Lequals";"shiftdown";"shrinkstack";"doneadjust";"createList";"addParams2lst";"createClosure";"copyEnv";"shiftup"] in
